@@ -1,8 +1,10 @@
 package slurmer
 
+type JobsContainer map[string]*Job
+
 type Application struct {
 	Directory string
-	Jobs      map[string]Job
+	Jobs      JobsContainer
 }
 
 const (
