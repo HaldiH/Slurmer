@@ -12,10 +12,10 @@ func main() {
 		panic(err)
 	}
 
-	server := server.Server{
-		Config: &cfg,
+	server, err := server.New(&cfg)
+	if err != nil {
+		panic(err)
 	}
-
 	err = server.Listen()
 	if err != nil {
 		panic(err)

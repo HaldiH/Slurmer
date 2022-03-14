@@ -16,15 +16,15 @@ type MetaProperties struct {
 }
 
 type Error struct {
-	Error string `json:"error"`
-	Errno int    `json:"errno"`
+	Error *string `json:"error"`
+	Errno *int    `json:"errno"`
 }
 
 type JobResponseProperties struct {
-	Account  string `json:"account"`
-	JobId    string `json:"job_id"`
-	JobState string `json:"job_state"`
-	Name     string `json:"name"`
+	Account  *string `json:"account"`
+	JobId    *int    `json:"job_id"`
+	JobState *string `json:"job_state"`
+	Name     *string `json:"name"`
 }
 
 type JobsResponse struct {

@@ -14,8 +14,8 @@ type Client struct {
 	slurmrestHost string
 }
 
-func NewClient(restUri string) (*Client, error) {
-	u, err := url.Parse(restUri)
+func NewClient(slurmrestdURL string) (*Client, error) {
+	u, err := url.Parse(slurmrestdURL)
 	if err != nil {
 		return nil, err
 	}
