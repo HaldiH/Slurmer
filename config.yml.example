@@ -1,0 +1,11 @@
+slurmrest:
+  url: "http+unix:///default?socket=/tmp/slurmrestd.sock"
+
+slurmer:
+  ip: 127.0.0.1
+  port: 8080
+  working_dir: /tmp/slurmer
+  applications:
+    - name: app1
+      token: test
+      uuid: a9a5fc66-9bed-4a13-874a-d8d7d1756224

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,11 +15,28 @@ import (
 
 type AppsContainer map[string]*slurmer.Application
 
+func NewAppsContainer() *AppsContainer {
+	c := make(AppsContainer)
+	return &c
+}
+
+func (c *AppsContainer) GetApp(id string) (*slurmer.Application, error) {
+	app := (*c)[id]
+	if app == nil {
+		return nil, errors.New("Cannot find app with id " + id)
+	}
+	return app, nil
+}
+
+func (c *AppsContainer) AddApp(id string, app *slurmer.Application) {
+	(*c)[id] = app
+}
+
 type Server struct {
 	config      *appconfig.Config
 	slurmClient *slurm.Client
 	router      chi.Router
-	apps        AppsContainer
+	apps        *AppsContainer
 }
 
 func New(config *appconfig.Config) (*Server, error) {
@@ -34,20 +52,23 @@ func New(config *appconfig.Config) (*Server, error) {
 	os.Chdir(config.Slurmer.WorkingDir)
 
 	appsDir := filepath.Join(config.Slurmer.WorkingDir, "applications")
-	apps := make(AppsContainer)
+	apps := NewAppsContainer()
 	err = os.MkdirAll(appsDir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
-	for _, app := range config.Slurmer.Applications {
-		appDir := filepath.Join(appsDir, app.UUID)
+	for _, appCfg := range config.Slurmer.Applications {
+		appDir := filepath.Join(appsDir, appCfg.UUID)
 		jobsDir := filepath.Join(appDir, "jobs")
 		// Will create app and jobs directory under /applications/{uuid}/jobs/
 		err = os.MkdirAll(jobsDir, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
-		apps[app.UUID] = &slurmer.Application{Directory: appDir, Jobs: make(slurmer.JobsContainer)}
+		apps.AddApp(appCfg.UUID, &slurmer.Application{
+			Token:     appCfg.Token,
+			Directory: appDir,
+			Jobs:      slurmer.NewJobsContainer()})
 	}
 
 	srv := Server{
