@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
-	"github.com/ShinoYasx/Slurmer/internal/server"
+	"github.com/ShinoYasx/Slurmer/internal/slurmer"
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 		panic(err)
 	}
 
-	server, err := server.New(&cfg)
+	server, err := slurmer.New(&cfg)
 	if err != nil {
 		panic(err)
 	}

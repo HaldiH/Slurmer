@@ -1,16 +1,15 @@
-package server
+package slurmer
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	"github.com/ShinoYasx/Slurmer/internal/slurmer"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 )
@@ -26,18 +25,9 @@ func (srv *Server) jobsRouter(r chi.Router) {
 }
 
 func (srv *Server) listJobs(w http.ResponseWriter, r *http.Request) {
-	// TODO: list only app specific jobs
-
 	app := r.Context().Value("app").(*slurmer.Application)
 
-	jsonData, err := json.Marshal(app.Jobs)
-
-	if err != nil {
-		Error(w, http.StatusInternalServerError)
-		panic(err)
-	}
-
-	w.Write(jsonData)
+	Ok(w, app.Jobs)
 }
 
 func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
@@ -80,33 +70,27 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = slurmer.WriteBatch(batchFile, &batchProperties)
+	err = WriteBatch(batchFile, &batchProperties)
 	if err != nil {
 		Error(w, http.StatusInternalServerError)
 		panic(err)
 	}
 
 	job := slurmer.Job{
-		Name:   batchProperties.JobName,
-		Status: slurmer.Stopped,
-		ID:     jobID,
+		Name:      batchProperties.JobName,
+		Status:    slurmer.JobStatus.Stopped,
+		ID:        jobID,
+		Directory: jobDir,
 	}
 
 	app.Jobs.AddJob(jobID, &job)
 
-	jsonData, err := json.Marshal(&job)
-	if err != nil {
-		Error(w, http.StatusInternalServerError)
-		panic(err)
-	}
-
-	w.Write(jsonData)
+	w.WriteHeader(http.StatusCreated)
+	Response(w, &job, http.StatusCreated)
 }
 
 func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	app := ctx.Value("app").(*slurmer.Application)
-	job := ctx.Value("job").(*slurmer.Job)
+	job := r.Context().Value("job").(*slurmer.Job)
 
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -124,31 +108,36 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 
 	switch status {
 	case "started":
-		if job.Status == slurmer.Stopped {
-			fmt.Println("Starting job")
-			cmd := exec.Command("sbatch", filepath.Join(app.Directory, "jobs", job.ID, "batch.sh"))
+		if job.Status == slurmer.JobStatus.Stopped {
+			cmd := exec.Command("sbatch", "-W", filepath.Join(job.Directory, "batch.sh"))
+			cmd.Dir = job.Directory
 			err := cmd.Run()
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
 			}
-			job.Status = slurmer.Started
+
+			job.Status = slurmer.JobStatus.Started
 			// TODO: save job pid and set job.status stopped when the job has terminated
 		}
 	case "stopped":
-		if job.Status == slurmer.Started {
+		if job.Status == slurmer.JobStatus.Started {
 			// TODO: cancel the job with slurm id job.PID
-			job.Status = slurmer.Stopped
+			job.Status = slurmer.JobStatus.Stopped
 		}
 	}
 
-	res, err := json.Marshal(status)
-	if err != nil {
-		Error(w, http.StatusInternalServerError)
-		panic(err)
-	}
-	w.Write(res)
-	w.Header().Set("Content-Type", "application/json")
+	Ok(w, status)
+}
+
+func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	app := ctx.Value("app").(*slurmer.Application)
+	job := ctx.Value("job").(*slurmer.Job)
+
+	app.Jobs.DeleteJob(job.ID)
+
+	Error(w, http.StatusOK)
 }
 
 func (srv *Server) JobCtx(next http.Handler) http.Handler {

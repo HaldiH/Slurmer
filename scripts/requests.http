@@ -1,0 +1,24 @@
+GET http://{{host}}:{{port}}/apps
+Accept: application/json
+X-Auth-Token: {{token}}
+
+###
+GET http://{{host}}:{{port}}/apps/{{app}}
+Accept: application/json
+X-Auth-Token: {{token}}
+
+###
+GET http://{{host}}:{{port}}/apps/{{app}}/jobs
+Accept: application/json
+X-Auth-Token: {{token}}
+
+###
+POST http://{{host}}:{{port}}/apps/{{app}}/jobs
+Accept: application/json
+X-Auth-Token: {{token}}
+Content-Type: application/json
+
+{
+  "job_name": "test_job",
+  "cpus_per_task": 1
+}

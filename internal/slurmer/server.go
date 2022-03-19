@@ -1,45 +1,29 @@
-package server
+package slurmer
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
-	"github.com/ShinoYasx/Slurmer/internal/slurmer"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"github.com/go-chi/chi"
 )
-
-type AppsContainer map[string]*slurmer.Application
-
-func NewAppsContainer() *AppsContainer {
-	c := make(AppsContainer)
-	return &c
-}
-
-func (c *AppsContainer) GetApp(id string) (*slurmer.Application, error) {
-	app := (*c)[id]
-	if app == nil {
-		return nil, errors.New("Cannot find app with id " + id)
-	}
-	return app, nil
-}
-
-func (c *AppsContainer) AddApp(id string, app *slurmer.Application) {
-	(*c)[id] = app
-}
 
 type Server struct {
 	config      *appconfig.Config
 	slurmClient *slurm.Client
 	router      chi.Router
-	apps        *AppsContainer
+	apps        *slurmer.AppsContainer
 }
 
 func New(config *appconfig.Config) (*Server, error) {
+	if config.Slurmer.WorkingDir == "" {
+		config.Slurmer.WorkingDir = "."
+	}
+
 	sc, err := slurm.NewClient(config.Slurmrest.URL)
 	if err != nil {
 		return nil, err
@@ -51,8 +35,8 @@ func New(config *appconfig.Config) (*Server, error) {
 	}
 	os.Chdir(config.Slurmer.WorkingDir)
 
-	appsDir := filepath.Join(config.Slurmer.WorkingDir, "applications")
-	apps := NewAppsContainer()
+	appsDir := "applications"
+	apps := slurmer.NewAppsContainer()
 	err = os.MkdirAll(appsDir, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -66,9 +50,9 @@ func New(config *appconfig.Config) (*Server, error) {
 			return nil, err
 		}
 		apps.AddApp(appCfg.UUID, &slurmer.Application{
-			Token:     appCfg.Token,
-			Directory: appDir,
-			Jobs:      slurmer.NewJobsContainer()})
+			AccessToken: appCfg.Token,
+			Directory:   appDir,
+			Jobs:        slurmer.NewJobsContainer()})
 	}
 
 	srv := Server{

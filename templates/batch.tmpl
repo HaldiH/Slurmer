@@ -1,2 +1,6 @@
 #!/bin/sh
+#SBATCH --account={{.Account}}
 #SBTACH --job-name={{.JobName}}
+#SBATCH --chdir={{.Chdir}}
+#SBATCH --comment={{.Comment}}
+#SBATCH --cpus-per-task={{.CpusPerTask}}
