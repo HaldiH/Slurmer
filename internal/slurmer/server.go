@@ -68,6 +68,7 @@ func New(config *appconfig.Config) (*Server, error) {
 }
 
 func (srv *Server) registerRoutes() {
+	srv.router.Use(SetContentType("application/json"))
 	srv.router.Route("/apps", srv.appsRouter)
 }
 

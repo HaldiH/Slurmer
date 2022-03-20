@@ -2,6 +2,7 @@ package slurmer
 
 import (
 	"errors"
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 )
 
 type AppsContainer map[string]*Application
@@ -15,11 +16,12 @@ type Application struct {
 type JobsContainer map[string]*Job
 
 type Job struct {
-	Name           string    `json:"name"`
-	Status         jobStatus `json:"status"`
-	ID             string    `json:"id"`
-	Directory      string    `json:"-"`
-	CurrentSlurmID int       `json:"-"`
+	Name           string                       `json:"name"`
+	Status         jobStatus                    `json:"status"`
+	ID             string                       `json:"id"`
+	Directory      string                       `json:"-"`
+	CurrentSlurmID int                          `json:"-"`
+	SlurmJob       *slurm.JobResponseProperties `json:"slurm_job"`
 }
 
 type BatchProperties struct {

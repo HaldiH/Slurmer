@@ -26,11 +26,13 @@ func (srv *Server) jobsRouter(r chi.Router) {
 func (srv *Server) listJobs(w http.ResponseWriter, r *http.Request) {
 	app := r.Context().Value("app").(*slurmer.Application)
 
-	Ok(w, app.Jobs)
+	Response(w, app.Jobs)
 }
 
 func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
-	Error(w, http.StatusNotImplemented)
+	// TODO: add slurm job properties in response
+	job := r.Context().Value("job").(*slurmer.Job)
+	Response(w, job)
 }
 
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +85,7 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	app.Jobs.AddJob(jobID, &job)
 
 	w.WriteHeader(http.StatusCreated)
-	Response(w, &job, http.StatusCreated)
+	Response(w, &job)
 }
 
 func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +124,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	Ok(w, status)
+	Response(w, status)
 }
 
 func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {

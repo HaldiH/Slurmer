@@ -19,7 +19,7 @@ func (srv *Server) appsRouter(r chi.Router) {
 
 func (srv *Server) listApps(w http.ResponseWriter, r *http.Request) {
 	// Debug route
-	Ok(w, srv.apps)
+	Response(w, srv.apps)
 }
 
 func (srv *Server) getApp(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +29,7 @@ func (srv *Server) getApp(w http.ResponseWriter, r *http.Request) {
 		panic("Requested resource is not an Application")
 	}
 
-	Ok(w, app)
+	Response(w, app)
 }
 
 func (srv *Server) AppCtx(next http.Handler) http.Handler {
