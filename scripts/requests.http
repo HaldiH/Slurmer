@@ -24,9 +24,17 @@ Content-Type: application/json
 }
 
 ###
-PUT http://{{host}}:{{port}}/apps/{{app}}/jobs/b16c35c5-588e-4d6a-963e-668010568152/status
+PUT http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
 
 "started"
+
+###
+PUT http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}/status
+Accept: application/json
+X-Auth-Token: {{token}}
+Content-Type: application/json
+
+"stopped"

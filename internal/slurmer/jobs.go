@@ -1,22 +1,16 @@
 package slurmer
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
+	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
-
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
-
-	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 )
 
 func (srv *Server) jobsRouter(r chi.Router) {
@@ -40,8 +34,6 @@ func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
-	// TODO: Generate UUID for new jobs and store batch file in per job separated directory
-
 	app := r.Context().Value("app").(*slurmer.Application)
 
 	jobID := uuid.New().String()
@@ -114,47 +106,19 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	switch status {
 	case "started":
 		if job.Status == slurmer.JobStatus.Stopped {
-			cmd := exec.Command("sbatch", "--wait", "batch.sh")
-			cmd.Dir = job.Directory
-			jobStdout, err := cmd.StdoutPipe()
+			err := handleStartJob(job)
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
 				log.Panic(err)
 			}
-
-			err = cmd.Start()
-			if err != nil {
-				Error(w, http.StatusInternalServerError)
-				log.Panic(err)
-			}
-
-			go func() {
-				// Goroutine will get slurm job id and wait for the job to end, so it can change its status
-				scanner := bufio.NewScanner(jobStdout)
-				// Read the first line of sbatch to get the slurm job id
-				if scanner.Scan() {
-					submitLine := scanner.Text()
-					words := strings.Split(submitLine, " ")
-					job.CurrentSlurmID, err = strconv.Atoi(words[len(words)-1])
-					if err != nil {
-						log.Panic(err)
-					}
-				}
-				err = cmd.Wait()
-				if err != nil {
-					log.Panic(err)
-				}
-				// When the job is terminated, mark the job as stopped
-				job.Status = slurmer.JobStatus.Stopped
-				job.CurrentSlurmID = 0 // 0 is job not active
-			}()
-
-			job.Status = slurmer.JobStatus.Started
 		}
 	case "stopped":
 		if job.Status == slurmer.JobStatus.Started {
-			// TODO: cancel the job with slurm id job.PID
-			job.Status = slurmer.JobStatus.Stopped
+			err := handleStopJob(job)
+			if err != nil {
+				Error(w, http.StatusInternalServerError)
+				log.Panic(err)
+			}
 		}
 	}
 
@@ -165,6 +129,15 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	app := ctx.Value("app").(*slurmer.Application)
 	job := ctx.Value("job").(*slurmer.Job)
+
+	// First we need to stop pending/running job
+	if job.Status == slurmer.JobStatus.Started {
+		err := handleStopJob(job)
+		if err != nil {
+			Error(w, http.StatusInternalServerError)
+			log.Panic(err)
+		}
+	}
 
 	app.Jobs.DeleteJob(job.ID)
 
