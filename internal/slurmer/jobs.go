@@ -1,14 +1,19 @@
 package slurmer
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
@@ -109,16 +114,42 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	switch status {
 	case "started":
 		if job.Status == slurmer.JobStatus.Stopped {
-			cmd := exec.Command("sbatch", "-W", filepath.Join(job.Directory, "batch.sh"))
+			cmd := exec.Command("sbatch", "--wait", "batch.sh")
 			cmd.Dir = job.Directory
-			err := cmd.Run()
+			jobStdout, err := cmd.StdoutPipe()
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
-				panic(err)
+				log.Panic(err)
 			}
 
+			err = cmd.Start()
+			if err != nil {
+				Error(w, http.StatusInternalServerError)
+				log.Panic(err)
+			}
+
+			go func() {
+				// Goroutine will get slurm job id and wait for the job to end, so it can change its status
+				scanner := bufio.NewScanner(jobStdout)
+				// Read the first line of sbatch to get the slurm job id
+				if scanner.Scan() {
+					submitLine := scanner.Text()
+					words := strings.Split(submitLine, " ")
+					job.CurrentSlurmID, err = strconv.Atoi(words[len(words)-1])
+					if err != nil {
+						log.Panic(err)
+					}
+				}
+				err = cmd.Wait()
+				if err != nil {
+					log.Panic(err)
+				}
+				// When the job is terminated, mark the job as stopped
+				job.Status = slurmer.JobStatus.Stopped
+				job.CurrentSlurmID = 0 // 0 is job not active
+			}()
+
 			job.Status = slurmer.JobStatus.Started
-			// TODO: save job pid and set job.status stopped when the job has terminated
 		}
 	case "stopped":
 		if job.Status == slurmer.JobStatus.Started {
