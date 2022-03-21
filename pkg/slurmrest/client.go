@@ -52,7 +52,7 @@ func NewRestClient(slurmrestdURL string) (*RestClient, error) {
 	return slurmClient, nil
 }
 
-func (c *RestClient) GetJobs() (*slurm.JobsResponse, error) {
+func (c *RestClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
 	var jobs slurm.JobsResponse
 	err := c.get("/jobs", &jobs)
 	return &jobs, err

@@ -1,6 +1,6 @@
 package slurm
 
 type Client interface {
-	GetJobs() (*JobsResponse, error)
+	GetJobs(ids ...int) (*JobsResponse, error)
 	GetJob(id int) (*JobResponseProperties, error)
 }

@@ -14,11 +14,25 @@ func NewCliClient() *CliClient {
 }
 
 // GetJobs gives a slice of all slurm jobs.
-func (c *CliClient) GetJobs() (*slurm.JobsResponse, error) {
+func (c *CliClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
+	var res *slurm.JobsResponse
 	res, err := execCommand[slurm.JobsResponse](exec.Command("squeue", "--json"))
 	if err != nil {
 		return nil, err
 	}
+
+	if len(ids) == 0 {
+		return res, nil
+	}
+
+	var jobs []slurm.JobResponseProperties
+	for _, job := range res.Jobs {
+		if contains[int](ids, *job.JobId) {
+			jobs = append(jobs, job)
+		}
+	}
+
+	res.Jobs = jobs
 	return res, nil
 }
 
