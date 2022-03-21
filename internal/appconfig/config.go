@@ -14,6 +14,7 @@ type Config struct {
 		IP           string `yaml:"ip"`
 		Port         uint16 `yaml:"port"`
 		WorkingDir   string `yaml:"working_dir"`
+		Connector    string `yaml:"connector"`
 		Applications []struct {
 			Name  string `yaml:"name"`
 			Token string `yaml:"token"`

@@ -11,6 +11,7 @@ type Application struct {
 	AccessToken string
 	Directory   string
 	Jobs        *JobsContainer
+	ID          string
 }
 
 type JobsContainer map[string]*Job
@@ -20,16 +21,8 @@ type Job struct {
 	Status         jobStatus                    `json:"status"`
 	ID             string                       `json:"id"`
 	Directory      string                       `json:"-"`
-	CurrentSlurmID int                          `json:"-"`
+	CurrentSlurmID int                          `json:"slurm_id"` // debug
 	SlurmJob       *slurm.JobResponseProperties `json:"slurm_job"`
-}
-
-type BatchProperties struct {
-	Account     string `json:"account"`
-	Chdir       string `json:"chdir"`
-	Comment     string `json:"comment"`
-	CpusPerTask uint   `json:"cpus_per_task"`
-	JobName     string `json:"job_name"`
 }
 
 type jobStatus string

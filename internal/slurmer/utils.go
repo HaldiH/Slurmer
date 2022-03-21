@@ -3,9 +3,9 @@ package slurmer
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +22,7 @@ func Response(w http.ResponseWriter, v interface{}) {
 	}
 	_, err = w.Write(jsonData)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 }
 
@@ -30,7 +30,7 @@ func Error(w http.ResponseWriter, code int) {
 	http.Error(w, http.StatusText(code), code)
 }
 
-func WriteBatch(out io.Writer, batch *slurmer.BatchProperties) error {
+func WriteBatch(out io.Writer, batch *slurm.BatchProperties) error {
 	tmpl, err := template.ParseFiles(filepath.Join("templates", "batch.tmpl"))
 	if err != nil {
 		return err
@@ -69,12 +69,12 @@ func handleStartJob(job *slurmer.Job) error {
 			words := strings.Split(submitLine, " ")
 			job.CurrentSlurmID, err = strconv.Atoi(words[len(words)-1])
 			if err != nil {
-				log.Panic(err)
+				panic(err)
 			}
 		}
 		err = cmd.Wait()
 		if err != nil {
-			log.Panic(err)
+			panic(err)
 		}
 		// When the job is terminated, mark the job as stopped
 		job.Status = slurmer.JobStatus.Stopped

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/slurmer"
+	"log"
 )
 
 func main() {
@@ -14,10 +15,10 @@ func main() {
 
 	server, err := slurmer.New(&cfg)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	err = server.Listen()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }

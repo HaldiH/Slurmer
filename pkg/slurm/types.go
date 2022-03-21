@@ -34,3 +34,11 @@ type JobsResponse struct {
 	Jobs   []JobResponseProperties `json:"jobs"`
 	Meta   MetaProperties          `json:"meta"`
 }
+
+type BatchProperties struct {
+	Account     string `json:"account"`
+	Chdir       string `json:"chdir"`
+	Comment     string `json:"comment"`
+	CpusPerTask uint   `json:"cpus_per_task"`
+	JobName     string `json:"job_name"`
+}

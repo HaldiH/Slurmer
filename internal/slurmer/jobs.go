@@ -3,11 +3,11 @@ package slurmer
 import (
 	"context"
 	"encoding/json"
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,15 +30,31 @@ func (srv *Server) listJobs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
-	// TODO: add slurm job properties in response
 	job := r.Context().Value("job").(*slurmer.Job)
+
+	if job.Status == slurmer.JobStatus.Started {
+		jobProp, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
+		if err != nil {
+			Error(w, http.StatusInternalServerError)
+			panic(err)
+		}
+		job.SlurmJob = jobProp
+	}
+
 	Response(w, job)
+	job.SlurmJob = nil
 }
 
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	app := r.Context().Value("app").(*slurmer.Application)
 
-	jobID := uuid.New().String()
+	var jobID string
+	// Debug purposes
+	if app.ID == "debug" {
+		jobID = "debug"
+	} else {
+		jobID = uuid.New().String()
+	}
 
 	reqBody, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -62,7 +78,7 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	}
 	defer batchFile.Close()
 
-	var batchProperties slurmer.BatchProperties
+	var batchProperties slurm.BatchProperties
 	err = json.Unmarshal(reqBody, &batchProperties)
 	if err != nil {
 		Error(w, http.StatusInternalServerError)
@@ -111,7 +127,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 			err := handleStartJob(job)
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
-				log.Panic(err)
+				panic(err)
 			}
 		}
 	case "stopped":
@@ -119,7 +135,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 			err := handleStopJob(job)
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
-				log.Panic(err)
+				panic(err)
 			}
 		}
 	}
@@ -137,7 +153,7 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 		err := handleStopJob(job)
 		if err != nil {
 			Error(w, http.StatusInternalServerError)
-			log.Panic(err)
+			panic(err)
 		}
 	}
 

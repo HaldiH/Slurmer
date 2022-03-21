@@ -38,3 +38,8 @@ X-Auth-Token: {{token}}
 Content-Type: application/json
 
 "stopped"
+
+###
+GET http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}
+Accept: application/json
+X-Auth-Token: {{token}}
