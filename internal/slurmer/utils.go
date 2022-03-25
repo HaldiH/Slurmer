@@ -3,8 +3,6 @@ package slurmer
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"io"
 	"net/http"
 	"os/exec"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 )
 
 func Response(w http.ResponseWriter, v interface{}) {
@@ -83,8 +84,4 @@ func handleStartJob(job *slurmer.Job) error {
 
 	job.Status = slurmer.JobStatus.Started
 	return nil
-}
-
-func handleStopJob(job *slurmer.Job) error {
-	return exec.Command("scancel", strconv.Itoa(job.CurrentSlurmID)).Start()
 }

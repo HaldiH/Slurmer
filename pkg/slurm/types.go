@@ -42,3 +42,13 @@ type BatchProperties struct {
 	CpusPerTask uint   `json:"cpus_per_task"`
 	JobName     string `json:"job_name"`
 }
+
+type SBatchOptions struct {
+	Array   []int  `json:"array"`
+	Account string `json:"account"`
+	Begin   string `json:"begin"`
+	Wait    bool   `json:"wait"`
+	Chdir   string `json:"chdir"`
+	Uid     string `json:"uid"`
+	Gid     string `json:"gid"`
+}

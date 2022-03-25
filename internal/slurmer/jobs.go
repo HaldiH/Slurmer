@@ -3,14 +3,15 @@ package slurmer
 import (
 	"context"
 	"encoding/json"
-	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
-	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
+	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 )
 
 func (srv *Server) jobsRouter(r chi.Router) {
@@ -132,7 +133,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	case "stopped":
 		if job.Status == slurmer.JobStatus.Started {
-			err := handleStopJob(job)
+			err := srv.slurmClient.CancelJob(job.CurrentSlurmID)
 			if err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
@@ -150,7 +151,7 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 
 	// First we need to stop pending/running job
 	if job.Status == slurmer.JobStatus.Started {
-		err := handleStopJob(job)
+		err := srv.slurmClient.CancelJob(job.CurrentSlurmID)
 		if err != nil {
 			Error(w, http.StatusInternalServerError)
 			panic(err)

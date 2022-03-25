@@ -2,10 +2,11 @@ package slurmrest
 
 import (
 	"context"
-	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"net"
 	"net/http"
 	"net/url"
+
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 )
 
 const slurmrestVersion = "v0.0.37"
@@ -58,6 +59,8 @@ func (c *RestClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
 	return &jobs, err
 }
 
-func (c *RestClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
-	panic("RestClient.GetJob not implemented")
-}
+func (c *RestClient) GetJob(id int) (*slurm.JobResponseProperties, error)
+
+func (c *RestClient) SubmitBatch(o slurm.SBatchOptions) (int, error)
+
+func (c *RestClient) CancelJob(id int) error

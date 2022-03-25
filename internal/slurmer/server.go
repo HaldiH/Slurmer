@@ -2,12 +2,12 @@ package slurmer
 
 import (
 	"fmt"
-	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmrest"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
@@ -30,11 +30,12 @@ func New(config *appconfig.Config) (*Server, error) {
 	var err error
 
 	switch config.Slurmer.Connector {
-	case "slurmrest":
-		sc, err = slurmrest.NewRestClient(config.Slurmrest.URL)
-		if err != nil {
-			return nil, err
-		}
+	// rest client not implemented yet
+	// case "slurmrest":
+	// 	sc, err = slurmrest.NewRestClient(config.Slurmrest.URL)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 	case "slurmcli":
 		sc = slurmcli.NewCliClient()
 	}

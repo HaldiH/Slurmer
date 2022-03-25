@@ -1,19 +1,27 @@
-GET http://{{host}}:{{port}}/apps
+@hostname = 127.0.0.1
+@port = 8080
+@host = {{hostname}}:{{port}}
+@token = debug
+@app = debug
+@job = debug
+
+
+GET http://{{host}}/apps
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}:{{port}}/apps/{{app}}
+GET http://{{host}}/apps/{{app}}
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}:{{port}}/apps/{{app}}/jobs
+GET http://{{host}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-POST http://{{host}}:{{port}}/apps/{{app}}/jobs
+POST http://{{host}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -24,7 +32,7 @@ Content-Type: application/json
 }
 
 ###
-PUT http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}/status
+PUT http://{{host}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -32,7 +40,7 @@ Content-Type: application/json
 "started"
 
 ###
-PUT http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}/status
+PUT http://{{host}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -40,6 +48,6 @@ Content-Type: application/json
 "stopped"
 
 ###
-GET http://{{host}}:{{port}}/apps/{{app}}/jobs/{{job}}
+GET http://{{host}}/apps/{{app}}/jobs/{{job}}
 Accept: application/json
 X-Auth-Token: {{token}}
