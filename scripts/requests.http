@@ -51,3 +51,20 @@ Content-Type: application/json
 GET http://{{host}}/apps/{{app}}/jobs/{{job}}
 Accept: application/json
 X-Auth-Token: {{token}}
+
+###
+GET http://{{host}}/apps/{{app}}/jobs/{{job}}/files
+Accept: application/zip
+X-Auth-Token: {{token}}
+
+###
+POST http://{{host}}/apps/{{app}}/jobs/{{job}}/files
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+X-Auth-Token: {{token}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="job_dir"; filename="test.zip"
+Content-Type: application/zip
+
+< ./test.zip
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

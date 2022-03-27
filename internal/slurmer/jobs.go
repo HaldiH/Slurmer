@@ -21,6 +21,7 @@ func (srv *Server) jobsRouter(r chi.Router) {
 		r.Use(srv.JobCtx)
 		r.Get("/", srv.getJob)
 		r.Put("/status", srv.updateJobStatus)
+		r.Route("/files", filesRouter)
 	})
 }
 

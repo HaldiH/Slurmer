@@ -1,10 +1,13 @@
 package slurmer
 
 import (
+	"archive/zip"
 	"bufio"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -84,4 +87,91 @@ func handleStartJob(job *slurmer.Job) error {
 
 	job.Status = slurmer.JobStatus.Started
 	return nil
+}
+
+func UnzipFile(r io.ReaderAt, size int64, destDir string) error {
+	zipReader, err := zip.NewReader(r, size)
+	if err != nil {
+		return err
+	}
+	for _, zipFile := range zipReader.File {
+		if zipFile.FileInfo().IsDir() {
+			err = os.MkdirAll(filepath.Join(destDir, zipFile.Name), zipFile.Mode())
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		f, err := zipFile.Open()
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		destFile, err := os.OpenFile(filepath.Join(destDir, zipFile.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, zipFile.Mode())
+		if err != nil {
+			return err
+		}
+		defer destFile.Close()
+		_, err = io.Copy(destFile, f)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ZipFile(srcDir string, w io.Writer) error {
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	oldwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	os.Chdir(srcDir)
+	defer os.Chdir(oldwd)
+
+	return filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if path == "." {
+			return nil
+		}
+
+		fileInfo, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		header, err := zip.FileInfoHeader(fileInfo)
+		if err != nil {
+			return err
+		}
+		header.Name = path
+
+		f, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		src, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		_, err = io.Copy(f, src)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
