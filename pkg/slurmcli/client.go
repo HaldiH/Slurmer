@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+	"github.com/ShinoYasx/Slurmer/pkg/utils"
 )
 
 type CliClient struct{}
@@ -65,7 +66,7 @@ func (c *CliClient) SubmitBatch(o slurm.SBatchOptions) (jobID int, err error) {
 		return 0, err
 	}
 
-	words := strings.Split(firstLine(jobStdout), " ")
+	words := strings.Split(utils.FirstLine(jobStdout), " ")
 	return strconv.Atoi(words[len(words)-1])
 }
 

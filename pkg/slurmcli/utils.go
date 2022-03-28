@@ -1,13 +1,10 @@
 package slurmcli
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
-	"io"
 	"os/exec"
 	"strconv"
-	"strings"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 )
@@ -47,12 +44,6 @@ func commaSeparatedArray[T any](a []T, stringify func(T) string) (str string) {
 		str += stringify(v)
 	}
 	return str
-}
-
-func firstLine(reader io.Reader) string {
-	bio := bufio.NewReader(reader)
-	line, _ := bio.ReadBytes('\n')
-	return strings.TrimRight(string(line), "\n")
 }
 
 func (c *CliClient) prepareBatch(o slurm.SBatchOptions) (cmd *exec.Cmd) {

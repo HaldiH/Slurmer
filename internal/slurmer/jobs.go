@@ -34,17 +34,17 @@ func (srv *Server) listJobs(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
 	job := r.Context().Value("job").(*slurmer.Job)
 
-	if job.Status == slurmer.JobStatus.Started {
-		jobProp, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
-		if err != nil {
-			Error(w, http.StatusInternalServerError)
-			panic(err)
-		}
-		job.SlurmJob = jobProp
-	}
+	// if job.Status == slurmer.JobStatus.Started {
+	// 	jobProp, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
+	// 	if err != nil {
+	// 		Error(w, http.StatusInternalServerError)
+	// 		panic(err)
+	// 	}
+	// 	job.SlurmJob = jobProp
+	// }
 
 	Response(w, job)
-	job.SlurmJob = nil
+	// job.SlurmJob = nil
 }
 
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
@@ -117,8 +117,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var status string
-	err = json.Unmarshal(reqBody, &status)
-	if err != nil {
+	if err = json.Unmarshal(reqBody, &status); err != nil {
 		Error(w, http.StatusBadRequest)
 		panic(err)
 	}
@@ -126,16 +125,14 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	switch status {
 	case "started":
 		if job.Status == slurmer.JobStatus.Stopped {
-			err := handleStartJob(job)
-			if err != nil {
+			if err := srv.handleStartJob(job); err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
 			}
 		}
 	case "stopped":
 		if job.Status == slurmer.JobStatus.Started {
-			err := srv.slurmClient.CancelJob(job.CurrentSlurmID)
-			if err != nil {
+			if err := srv.slurmClient.CancelJob(job.CurrentSlurmID); err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
 			}

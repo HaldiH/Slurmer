@@ -2,9 +2,11 @@ package slurmer
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
@@ -38,6 +40,8 @@ func New(config *appconfig.Config) (*Server, error) {
 	// 	}
 	case "slurmcli":
 		sc = slurmcli.NewCliClient()
+	default:
+		log.Fatal("Unimplemented slurm controller: ", config.Slurmer.Connector)
 	}
 
 	err = os.MkdirAll(config.Slurmer.WorkingDir, os.ModePerm)
@@ -89,7 +93,18 @@ func (srv *Server) registerRoutes() {
 }
 
 func (srv *Server) Listen() error {
+	srv.updateJobs()
+	go srv.heartBeat(10 * time.Second)
+
 	addr := fmt.Sprintf("%s:%d", srv.config.Slurmer.IP, srv.config.Slurmer.Port)
 	fmt.Printf("Server listening on %s\n", addr)
 	return http.ListenAndServe(addr, srv.router)
+}
+
+func (srv *Server) heartBeat(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+
+	for range ticker.C {
+		srv.updateJobs()
+	}
 }
