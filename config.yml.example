@@ -4,6 +4,7 @@ slurmrest:
 slurmer:
   ip: 127.0.0.1
   port: 8080
+  connector: slurmcli
   working_dir: /tmp/slurmer
   applications:
     - name: app1

@@ -18,6 +18,7 @@ func execCommand[T any](cmd *exec.Cmd) (filledStruct *T, err error) {
 		return nil, errors.New("invalid slurm command")
 	}
 
+	filledStruct = new(T)
 	err = json.Unmarshal(jsonData, filledStruct)
 	if err != nil {
 		return nil, err
