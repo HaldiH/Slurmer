@@ -10,9 +10,10 @@ import (
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"github.com/go-chi/chi"
 )
 
@@ -20,7 +21,9 @@ type Server struct {
 	config      *appconfig.Config
 	slurmClient slurm.Client
 	router      chi.Router
-	apps        *slurmer.AppsContainer
+	apps        *AppsContainer
+	jobs        JobsContainer
+	slurmCache  *SlurmCache
 }
 
 func New(config *appconfig.Config) (*Server, error) {
@@ -54,25 +57,45 @@ func New(config *appconfig.Config) (*Server, error) {
 		return nil, err
 	}
 
+	db, err := gorm.Open(sqlite.Open("slurmer.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
 	appsDir := "applications"
-	apps := slurmer.NewAppsContainer()
+	apps := NewAppsContainer()
 	err = os.MkdirAll(appsDir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 	for _, appCfg := range config.Slurmer.Applications {
-		appDir := filepath.Join(appsDir, appCfg.UUID)
+		appUUID := appCfg.UUID
+		appDir := filepath.Join(appsDir, appUUID)
 		jobsDir := filepath.Join(appDir, "jobs")
 		// Will create app and jobs directory under /applications/{uuid}/jobs/
 		err = os.MkdirAll(jobsDir, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
-		apps.AddApp(appCfg.UUID, &slurmer.Application{
+
+		apps.AddApp(appCfg.UUID, &Application{
 			AccessToken: appCfg.Token,
 			Directory:   appDir,
-			Jobs:        slurmer.NewJobsContainer(),
-			ID:          appCfg.UUID})
+			ID:          appUUID})
+	}
+
+	persistentJobs, err := NewPersistentJobs(db)
+	if err != nil {
+		return nil, err
+	}
+
+	slurmCache, err := NewSlurmCache(db)
+	if err != nil {
+		return nil, err
 	}
 
 	srv := Server{
@@ -80,6 +103,8 @@ func New(config *appconfig.Config) (*Server, error) {
 		slurmClient: sc,
 		router:      chi.NewRouter(),
 		apps:        apps,
+		jobs:        persistentJobs,
+		slurmCache:  slurmCache,
 	}
 
 	srv.registerRoutes()

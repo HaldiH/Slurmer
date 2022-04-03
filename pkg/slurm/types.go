@@ -21,12 +21,12 @@ type Error struct {
 }
 
 type JobResponseProperties struct {
-	Account          *string `json:"account"`
-	JobId            *int    `json:"job_id"`
-	JobState         *string `json:"job_state"`
-	StateDescription *string `json:"state_description"`
-	StateReason      *string `json:"state_reason"`
-	Name             *string `json:"name"`
+	Account          string `json:"account"`
+	JobId            int    `json:"job_id" gorm:"unique;primaryKey"`
+	JobState         string `json:"job_state"`
+	StateDescription string `json:"state_description"`
+	StateReason      string `json:"state_reason"`
+	Name             string `json:"name"`
 }
 
 type JobsResponse struct {
@@ -36,11 +36,13 @@ type JobsResponse struct {
 }
 
 type BatchProperties struct {
-	Account     string `json:"account"`
-	Chdir       string `json:"chdir"`
-	Comment     string `json:"comment"`
-	CpusPerTask uint   `json:"cpus_per_task"`
-	JobName     string `json:"job_name"`
+	Account     string   `json:"account"`
+	Chdir       string   `json:"chdir"`
+	Comment     string   `json:"comment"`
+	CpusPerTask uint     `json:"cpus_per_task"`
+	JobName     string   `json:"job_name"`
+	Command     string   `json:"command"`
+	Args        []string `json:"args"`
 }
 
 type SBatchOptions struct {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
-
 	"github.com/go-chi/chi"
 )
 
@@ -26,7 +24,7 @@ func (srv *Server) listApps(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) getApp(w http.ResponseWriter, r *http.Request) {
 	// Debug route
-	app, ok := r.Context().Value("app").(*slurmer.Application)
+	app, ok := r.Context().Value("app").(*Application)
 	if !ok {
 		panic("Requested resource is not an Application")
 	}
@@ -48,9 +46,9 @@ func (srv *Server) AppCtx(next http.Handler) http.Handler {
 	})
 }
 
-func (src *Server) AppAuth(next http.Handler) http.Handler {
+func (srv *Server) AppAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app, ok := r.Context().Value("app").(*slurmer.Application)
+		app, ok := r.Context().Value("app").(*Application)
 		token := r.Header.Get("X-Auth-Token")
 		if !ok || app.AccessToken != token {
 			if app.AccessToken == "" {

@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (srv *Server) jobsRouter(r chi.Router) {
@@ -26,13 +27,19 @@ func (srv *Server) jobsRouter(r chi.Router) {
 }
 
 func (srv *Server) listJobs(w http.ResponseWriter, r *http.Request) {
-	app := r.Context().Value("app").(*slurmer.Application)
+	app := r.Context().Value("app").(*Application)
 
-	Response(w, app.Jobs)
+	jobs, err := srv.jobs.GetAllAppJobs(app.ID)
+	if err != nil {
+		Error(w, http.StatusInternalServerError)
+		log.Panic(err)
+	}
+
+	Response(w, jobs)
 }
 
 func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*slurmer.Job)
+	job := r.Context().Value("job").(*Job)
 
 	// if job.Status == slurmer.JobStatus.Started {
 	// 	jobProp, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
@@ -48,14 +55,14 @@ func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
-	app := r.Context().Value("app").(*slurmer.Application)
+	app := r.Context().Value("app").(*Application)
 
 	var jobID string
 	// Debug purposes
 	if app.ID == "debug" {
 		jobID = "debug"
 	} else {
-		jobID = uuid.New().String()
+		jobID = uuid.NewString()
 	}
 
 	reqBody, err := io.ReadAll(r.Body)
@@ -87,27 +94,30 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = WriteBatch(batchFile, &batchProperties)
+	err = writeBatch(batchFile, &batchProperties)
 	if err != nil {
 		Error(w, http.StatusInternalServerError)
 		panic(err)
 	}
 
-	job := slurmer.Job{
+	job := Job{
 		Name:      batchProperties.JobName,
-		Status:    slurmer.JobStatus.Stopped,
+		Status:    JobStatus.Stopped,
 		ID:        jobID,
 		Directory: jobDir,
 	}
 
-	app.Jobs.AddJob(jobID, &job)
+	if err := srv.jobs.AddAppJob(app.ID, &job); err != nil {
+		Error(w, http.StatusInternalServerError)
+		panic(err)
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	Response(w, &job)
 }
 
 func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*slurmer.Job)
+	job := r.Context().Value("job").(*Job)
 
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -124,14 +134,14 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 
 	switch status {
 	case "started":
-		if job.Status == slurmer.JobStatus.Stopped {
+		if job.Status == JobStatus.Stopped {
 			if err := srv.handleStartJob(job); err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
 			}
 		}
 	case "stopped":
-		if job.Status == slurmer.JobStatus.Started {
+		if job.Status == JobStatus.Started {
 			if err := srv.slurmClient.CancelJob(job.CurrentSlurmID); err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
@@ -144,11 +154,11 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	app := ctx.Value("app").(*slurmer.Application)
-	job := ctx.Value("job").(*slurmer.Job)
+	app := ctx.Value("app").(*Application)
+	job := ctx.Value("job").(*Job)
 
 	// First we need to stop pending/running job
-	if job.Status == slurmer.JobStatus.Started {
+	if job.Status == JobStatus.Started {
 		err := srv.slurmClient.CancelJob(job.CurrentSlurmID)
 		if err != nil {
 			Error(w, http.StatusInternalServerError)
@@ -156,21 +166,26 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	app.Jobs.DeleteJob(job.ID)
+	if err := srv.jobs.DeleteAppJob(app.ID, job.ID); err != nil {
+		Error(w, http.StatusInternalServerError)
+		panic(err)
+	}
 
 	Error(w, http.StatusOK)
 }
 
 func (srv *Server) JobCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app := r.Context().Value("app").(*slurmer.Application)
+		app := r.Context().Value("app").(*Application)
 		jobID := chi.URLParam(r, "jobID")
-		job, err := app.Jobs.GetJob(jobID)
+		job, err := srv.jobs.GetAppJob(app.ID, jobID)
 		if err != nil {
-			Error(w, http.StatusNotFound)
-			return
+			if err == gorm.ErrRecordNotFound {
+				Error(w, http.StatusNotFound)
+				return
+			}
+			log.Panic(err)
 		}
-
 		ctx := context.WithValue(r.Context(), "job", job)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

@@ -16,7 +16,6 @@ import (
 	"text/template"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/slurmer"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
 )
 
@@ -36,7 +35,7 @@ func Error(w http.ResponseWriter, code int) {
 	http.Error(w, http.StatusText(code), code)
 }
 
-func WriteBatch(out io.Writer, batch *slurm.BatchProperties) error {
+func writeBatch(out io.Writer, batch *slurm.BatchProperties) error {
 	tmpl, err := template.ParseFiles(filepath.Join("templates", "batch.tmpl"))
 	if err != nil {
 		return err
@@ -53,7 +52,7 @@ func SetContentType(contentType string) func(handler http.Handler) http.Handler 
 	}
 }
 
-func (srv *Server) handleStartJob(job *slurmer.Job) error {
+func (srv *Server) handleStartJob(job *Job) error {
 	cmd := exec.Command("sbatch", "--wait", "batch.sh")
 	cmd.Dir = job.Directory
 	jobStdout, err := cmd.StdoutPipe()
@@ -79,44 +78,72 @@ func (srv *Server) handleStartJob(job *slurmer.Job) error {
 			panic(err)
 		}
 
+		if err := srv.slurmCache.SetSlurmJob(slurmJob); err != nil {
+			panic(err)
+		}
+
 		job.CurrentSlurmID = slurmID
-		job.SlurmJob = slurmJob
+		job.Status = JobStatus.Started
+		srv.jobs.UpdateJob(job)
 
 		if err := cmd.Wait(); err != nil {
 			panic(err)
 		}
 		// When the job is terminated, mark the job as stopped
-		job.Status = slurmer.JobStatus.Stopped
+		job.Status = JobStatus.Stopped
+		job.CurrentSlurmID = 0
+		srv.jobs.UpdateJob(job)
 
-		slurmJob, err = srv.slurmClient.GetJob(slurmID)
-		if err != nil {
+		if err := srv.slurmCache.DeleteSlurmJob(slurmJob); err != nil {
 			panic(err)
 		}
-
-		job.SlurmJob = slurmJob
 	}()
 
-	job.Status = slurmer.JobStatus.Started
+	job.Status = JobStatus.Started
 	return nil
 }
 
 func (srv *Server) updateJobs() {
 	fmt.Println("Updating jobs status")
-	for _, app := range *srv.apps {
-		for _, job := range *app.Jobs {
-			if job.Status == slurmer.JobStatus.Started {
-				slurmJob, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
-				if err != nil {
-					panic(err)
-				}
-
-				job.SlurmJob = slurmJob
+	jobs, err := srv.jobs.GetAllJobs()
+	if err != nil {
+		panic(err)
+	}
+	for _, job := range jobs {
+		if job.Status == JobStatus.Started {
+			slurmJob, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
+			if err != nil {
+				panic(err)
 			}
+
+			srv.slurmCache.SetSlurmJob(slurmJob)
 		}
 	}
 }
 
-func UntarDirectory(r io.Reader, dstDir string) error {
+func SerializeMapAsArray[K comparable, V any](m map[K]V) ([]byte, error) {
+	jsonData := []byte{'['}
+
+	first := true
+	for _, val := range m {
+		if first {
+			first = false
+		} else {
+			jsonData = append(jsonData, ',')
+		}
+		jobJsonData, err := json.Marshal(val)
+		if err != nil {
+			return nil, err
+		}
+		jsonData = append(jsonData, jobJsonData...)
+	}
+
+	jsonData = append(jsonData, ']')
+
+	return jsonData, nil
+}
+
+func untarDirectory(r io.Reader, dstDir string) error {
 	tarReader := tar.NewReader(r)
 	for {
 		header, err := tarReader.Next()
@@ -154,7 +181,7 @@ func UntarDirectory(r io.Reader, dstDir string) error {
 	return nil
 }
 
-func UnzipFile(r io.ReaderAt, size int64, destDir string) error {
+func unzipFile(r io.ReaderAt, size int64, destDir string) error {
 	zipReader, err := zip.NewReader(r, size)
 	if err != nil {
 		return err
@@ -240,7 +267,7 @@ func UnzipFile(r io.ReaderAt, size int64, destDir string) error {
 // 	})
 // }
 
-func ZipFile(srcDir string, w io.Writer) error {
+func zipFile(srcDir string, w io.Writer) error {
 	zipWriter := zip.NewWriter(w)
 	defer zipWriter.Close()
 

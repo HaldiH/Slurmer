@@ -31,7 +31,7 @@ func (c *CliClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
 
 	var jobs []slurm.JobResponseProperties
 	for _, job := range res.Jobs {
-		if contains(ids, *job.JobId) {
+		if contains(ids, job.JobId) {
 			jobs = append(jobs, job)
 		}
 	}
@@ -46,7 +46,7 @@ func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
 		return nil, err
 	}
 	for _, job := range jobsResponse.Jobs {
-		if *job.JobId == id {
+		if job.JobId == id {
 			return &job, nil
 		}
 	}
