@@ -77,16 +77,28 @@ func (srv *Server) handleStartJob(job *Job) error {
 			panic(err)
 		}
 
+		if oldSlurmId := job.SlurmId; oldSlurmId != 0 {
+			if err := srv.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
+				if err != slurm.ErrJobNotFound {
+					panic(err)
+				}
+			}
+		}
+
 		job.SlurmJob = slurmJob
 		job.Status = JobStatus.Started
-		srv.jobs.UpdateJob(job)
+		if err := srv.jobs.UpdateJob(job); err != nil {
+			panic(err)
+		}
 
 		if err := cmd.Wait(); err != nil {
 			panic(err)
 		}
 		// When the job is terminated, mark the job as stopped
 		job.Status = JobStatus.Stopped
-		srv.jobs.UpdateJob(job)
+		if err := srv.jobs.UpdateJob(job); err != nil {
+			panic(err)
+		}
 	}()
 
 	return nil
