@@ -18,7 +18,7 @@ import (
 func (srv *Server) jobsRouter(r chi.Router) {
 	r.Get("/", srv.listJobs)
 	r.Post("/", srv.createJob)
-	r.Route("/{jobID}", func(r chi.Router) {
+	r.Route("/{jobId}", func(r chi.Router) {
 		r.Use(srv.JobCtx)
 		r.Get("/", srv.getJob)
 		r.Put("/status", srv.updateJobStatus)
@@ -57,12 +57,12 @@ func (srv *Server) getJob(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	app := r.Context().Value("app").(*Application)
 
-	var jobID string
+	var jobId string
 	// Debug purposes
 	if app.ID == "debug" {
-		jobID = "debug"
+		jobId = "debug"
 	} else {
-		jobID = uuid.NewString()
+		jobId = uuid.NewString()
 	}
 
 	reqBody, err := io.ReadAll(r.Body)
@@ -72,7 +72,7 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	jobDir := filepath.Join(app.Directory, "jobs", jobID)
+	jobDir := filepath.Join(app.Directory, "jobs", jobId)
 
 	err = os.MkdirAll(jobDir, os.ModePerm)
 	if err != nil {
@@ -103,7 +103,7 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	job := Job{
 		Name:      batchProperties.JobName,
 		Status:    JobStatus.Stopped,
-		ID:        jobID,
+		Id:        jobId,
 		Directory: jobDir,
 	}
 
@@ -142,7 +142,7 @@ func (srv *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	case "stopped":
 		if job.Status == JobStatus.Started {
-			if err := srv.slurmClient.CancelJob(job.CurrentSlurmID); err != nil {
+			if err := srv.slurmClient.CancelJob(job.SlurmId); err != nil {
 				Error(w, http.StatusInternalServerError)
 				panic(err)
 			}
@@ -159,14 +159,14 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 
 	// First we need to stop pending/running job
 	if job.Status == JobStatus.Started {
-		err := srv.slurmClient.CancelJob(job.CurrentSlurmID)
+		err := srv.slurmClient.CancelJob(job.SlurmId)
 		if err != nil {
 			Error(w, http.StatusInternalServerError)
 			panic(err)
 		}
 	}
 
-	if err := srv.jobs.DeleteAppJob(app.ID, job.ID); err != nil {
+	if err := srv.jobs.DeleteAppJob(app.ID, job.Id); err != nil {
 		Error(w, http.StatusInternalServerError)
 		panic(err)
 	}
@@ -177,8 +177,8 @@ func (srv *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) JobCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app := r.Context().Value("app").(*Application)
-		jobID := chi.URLParam(r, "jobID")
-		job, err := srv.jobs.GetAppJob(app.ID, jobID)
+		jobId := chi.URLParam(r, "jobId")
+		job, err := srv.jobs.GetAppJob(app.ID, jobId)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				Error(w, http.StatusNotFound)

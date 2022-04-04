@@ -24,6 +24,7 @@ type Server struct {
 	apps        *AppsContainer
 	jobs        JobsContainer
 	slurmCache  *SlurmCache
+	db          *gorm.DB
 }
 
 func New(config *appconfig.Config) (*Server, error) {
@@ -105,6 +106,7 @@ func New(config *appconfig.Config) (*Server, error) {
 		apps:        apps,
 		jobs:        persistentJobs,
 		slurmCache:  slurmCache,
+		db:          db,
 	}
 
 	srv.registerRoutes()
@@ -118,7 +120,9 @@ func (srv *Server) registerRoutes() {
 }
 
 func (srv *Server) Listen() error {
-	srv.updateJobs()
+	if err := srv.updateJobs(); err != nil {
+		return err
+	}
 	go srv.heartBeat(10 * time.Second)
 
 	addr := fmt.Sprintf("%s:%d", srv.config.Slurmer.IP, srv.config.Slurmer.Port)
@@ -130,6 +134,8 @@ func (srv *Server) heartBeat(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 
 	for range ticker.C {
-		srv.updateJobs()
+		if err := srv.updateJobs(); err != nil {
+			panic(err)
+		}
 	}
 }

@@ -22,7 +22,7 @@ type Error struct {
 
 type JobResponseProperties struct {
 	Account          string `json:"account"`
-	JobId            int    `json:"job_id" gorm:"unique;primaryKey"`
+	JobId            int    `json:"job_id" gorm:"primaryKey"`
 	JobState         string `json:"job_state"`
 	StateDescription string `json:"state_description"`
 	StateReason      string `json:"state_reason"`

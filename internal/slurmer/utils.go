@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -68,21 +67,17 @@ func (srv *Server) handleStartJob(job *Job) error {
 		// Goroutine will get slurm job id and wait for the job to end, so it can change its status
 		// Read the first line of sbatch to get the slurm job id
 		words := strings.Split(utils.FirstLine(jobStdout), " ")
-		slurmID, err := strconv.Atoi(words[len(words)-1])
+		slurmId, err := strconv.Atoi(words[len(words)-1])
 		if err != nil {
 			panic(err)
 		}
 
-		slurmJob, err := srv.slurmClient.GetJob(slurmID)
+		slurmJob, err := srv.slurmClient.GetJob(slurmId)
 		if err != nil {
 			panic(err)
 		}
 
-		if err := srv.slurmCache.SetSlurmJob(slurmJob); err != nil {
-			panic(err)
-		}
-
-		job.CurrentSlurmID = slurmID
+		job.SlurmJob = slurmJob
 		job.Status = JobStatus.Started
 		srv.jobs.UpdateJob(job)
 
@@ -91,34 +86,44 @@ func (srv *Server) handleStartJob(job *Job) error {
 		}
 		// When the job is terminated, mark the job as stopped
 		job.Status = JobStatus.Stopped
-		job.CurrentSlurmID = 0
 		srv.jobs.UpdateJob(job)
-
-		if err := srv.slurmCache.DeleteSlurmJob(slurmJob); err != nil {
-			panic(err)
-		}
 	}()
 
-	job.Status = JobStatus.Started
 	return nil
 }
 
-func (srv *Server) updateJobs() {
-	fmt.Println("Updating jobs status")
+func (srv *Server) updateJobs() error {
 	jobs, err := srv.jobs.GetAllJobs()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	for _, job := range jobs {
-		if job.Status == JobStatus.Started {
-			slurmJob, err := srv.slurmClient.GetJob(job.CurrentSlurmID)
+		if job.Status == JobStatus.Started || job.SlurmJob != nil {
+			slurmJob, err := srv.slurmClient.GetJob(job.SlurmId)
 			if err != nil {
-				panic(err)
+				if err == slurm.ErrJobNotFound {
+					if err := srv.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
+						return err
+					}
+					job.SlurmId = 0
+					job.SlurmJob = nil
+					job.Status = JobStatus.Stopped
+				} else {
+					return err
+				}
+			} else {
+				job.SlurmJob = slurmJob
+				if slurmJob.JobState == "CANCELLED" {
+					job.Status = stopped
+				}
 			}
 
-			srv.slurmCache.SetSlurmJob(slurmJob)
+			if err := srv.jobs.UpdateJob(job); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 func SerializeMapAsArray[K comparable, V any](m map[K]V) ([]byte, error) {

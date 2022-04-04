@@ -1,7 +1,6 @@
 package slurmcli
 
 import (
-	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -50,7 +49,7 @@ func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
 			return &job, nil
 		}
 	}
-	return nil, errors.New("invalid job id: " + strconv.Itoa(id))
+	return nil, slurm.ErrJobNotFound
 }
 
 func (c *CliClient) SubmitBatch(o slurm.SBatchOptions) (jobID int, err error) {

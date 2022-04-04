@@ -16,13 +16,13 @@ type Application struct {
 }
 
 type Job struct {
-	Name           string                       `json:"name"`
-	Status         jobStatus                    `json:"status"`
-	ID             string                       `json:"id" gorm:"primaryKey"`
-	Directory      string                       `json:"-"`
-	SlurmJob       *slurm.JobResponseProperties `json:"slurm_job" gorm:"-"`
-	AppID          string                       `json:"-"`
-	CurrentSlurmID int                          `json:"slurm_id"` // debug
+	Name      string                       `json:"name"`
+	Status    jobStatus                    `json:"status"`
+	Id        string                       `json:"id" gorm:"primaryKey"`
+	SlurmId   int                          `json:"slurm_id"`
+	SlurmJob  *slurm.JobResponseProperties `json:"slurm_job" gorm:"foreignKey:SlurmId"`
+	Directory string                       `json:"-"`
+	AppId     string                       `json:"-"`
 }
 
 type JobsContainer interface {
