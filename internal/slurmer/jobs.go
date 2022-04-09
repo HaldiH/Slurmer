@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
+
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+
 	"github.com/go-chi/chi"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 

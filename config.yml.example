@@ -10,3 +10,13 @@ slurmer:
     - name: app1
       token: test
       uuid: a9a5fc66-9bed-4a13-874a-d8d7d1756224
+  logs:
+    # available: text, json
+    format: text
+
+    stdout: false
+    output: logs/slurmer.txt
+
+    # available, from most to less verbose:
+    # trace, debug, info, warning, error, fatal, panic
+    level: debug

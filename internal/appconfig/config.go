@@ -20,6 +20,12 @@ type Config struct {
 			Token string `yaml:"token"`
 			UUID  string `yaml:"uuid"`
 		} `yaml:"applications"`
+		Logs struct {
+			Format string `yaml:"format"`
+			Stdout bool   `yaml:"stdout"`
+			Output string `yaml:"output"`
+			Level  string `yaml:"level"`
+		}
 	} `yaml:"slurmer"`
 }
 

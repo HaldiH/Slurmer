@@ -2,6 +2,7 @@ package slurmer
 
 import (
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

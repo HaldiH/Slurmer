@@ -74,7 +74,7 @@ func (c *AppsContainer) DeleteApp(id string) {
 	delete(*c, id)
 }
 
-func (c *AppsContainer) MarshalJSON() ([]byte, error) { return SerializeMapAsArray(*c) }
+func (c *AppsContainer) MarshalJSON() ([]byte, error) { return MapToJSONArray(*c) }
 
 // func NewJobsContainer() *JobsContainer {
 // 	c := make(JobsContainer)

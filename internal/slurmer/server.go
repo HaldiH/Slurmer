@@ -2,19 +2,19 @@ package slurmer
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
+
+	"github.com/go-chi/chi"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-
-	"github.com/ShinoYasx/Slurmer/internal/appconfig"
-	"github.com/go-chi/chi"
 )
 
 type Server struct {

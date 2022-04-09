@@ -1,20 +1,72 @@
 package main
 
 import (
-	"log"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/slurmer"
+	log "github.com/sirupsen/logrus"
 )
 
-func main() {
-	var cfg appconfig.Config
-	err := appconfig.MakeYamlConf("config.yml", &cfg)
+var cfg *appconfig.Config
+
+func init() {
+	cfg = new(appconfig.Config)
+	err := appconfig.MakeYamlConf("config.yml", cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	server, err := slurmer.New(&cfg)
+	var formatter log.Formatter
+	switch cfg.Slurmer.Logs.Format {
+	case "text":
+		formatter = &log.TextFormatter{}
+	case "json":
+		formatter = &log.JSONFormatter{}
+	}
+
+	var output io.Writer
+	if cfg.Slurmer.Logs.Stdout || cfg.Slurmer.Logs.Output == "" {
+		output = os.Stdout
+	} else {
+		if err := os.MkdirAll(
+			filepath.Dir(cfg.Slurmer.Logs.Output),
+			os.ModeDir); err != nil {
+			panic(err)
+		}
+		output, err = os.OpenFile(cfg.Slurmer.Logs.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0440)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	var level log.Level
+	switch cfg.Slurmer.Logs.Level {
+	case "trace":
+		level = log.TraceLevel
+	case "debug":
+		level = log.DebugLevel
+	case "info":
+		level = log.InfoLevel
+	case "warning":
+		level = log.WarnLevel
+	case "error":
+		level = log.ErrorLevel
+	case "fatal":
+		level = log.FatalLevel
+	case "panic":
+		level = log.PanicLevel
+	}
+
+	log.SetFormatter(formatter)
+	log.SetOutput(output)
+	log.SetLevel(level)
+}
+
+func main() {
+	server, err := slurmer.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

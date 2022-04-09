@@ -16,6 +16,8 @@ import (
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func Response(w http.ResponseWriter, v interface{}) {
@@ -113,6 +115,7 @@ func (srv *Server) handleStartJob(job *Job) error {
 }
 
 func (srv *Server) updateJobs() error {
+	log.Debug("Update jobs")
 	jobs, err := srv.jobs.GetAllJobs()
 	if err != nil {
 		return err
@@ -146,7 +149,7 @@ func (srv *Server) updateJobs() error {
 	return nil
 }
 
-func SerializeMapAsArray[K comparable, V any](m map[K]V) ([]byte, error) {
+func MapToJSONArray[K comparable, V any](m map[K]V) ([]byte, error) {
 	jsonData := []byte{'['}
 
 	first := true
