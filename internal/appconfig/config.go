@@ -25,12 +25,12 @@ type Config struct {
 			Stdout bool   `yaml:"stdout"`
 			Output string `yaml:"output"`
 			Level  string `yaml:"level"`
-		}
+		} `yaml:"logs"`
 	} `yaml:"slurmer"`
 }
 
 func MakeYamlConf(filename string, config *Config) error {
-	f, err := os.Open("config.yml")
+	f, err := os.Open(filename)
 	if err != nil {
 		return nil // We don't want to throw an error il the file doesn't exist.
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,8 +14,11 @@ import (
 var cfg *appconfig.Config
 
 func init() {
+	cfgFile := flag.String("c", "./config.yaml", "Location of the slurmer config file")
+	flag.Parse()
+
 	cfg = new(appconfig.Config)
-	err := appconfig.MakeYamlConf("config.yml", cfg)
+	err := appconfig.MakeYamlConf(*cfgFile, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -25,6 +29,8 @@ func init() {
 		formatter = &log.TextFormatter{}
 	case "json":
 		formatter = &log.JSONFormatter{}
+	default:
+		formatter = &log.TextFormatter{}
 	}
 
 	var output io.Writer
@@ -58,6 +64,8 @@ func init() {
 		level = log.FatalLevel
 	case "panic":
 		level = log.PanicLevel
+	default:
+		level = log.InfoLevel
 	}
 
 	log.SetFormatter(formatter)
