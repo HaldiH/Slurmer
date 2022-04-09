@@ -11,6 +11,7 @@ import (
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/go-chi/chi"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -94,7 +95,14 @@ func (srv *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = writeBatch(batchFile, &batchProperties)
+	validate := validator.New()
+
+	if err := validate.Struct(&batchProperties); err != nil {
+		Error(w, http.StatusBadRequest)
+		return
+	}
+
+	err = WriteBatch(batchFile, &batchProperties)
 	if err != nil {
 		Error(w, http.StatusInternalServerError)
 		panic(err)

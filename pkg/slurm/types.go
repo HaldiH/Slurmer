@@ -36,12 +36,12 @@ type JobsResponse struct {
 }
 
 type BatchProperties struct {
-	Account     string   `json:"account"`
-	Chdir       string   `json:"chdir"`
-	Comment     string   `json:"comment"`
+	Account     string   `json:"account" validate:"excludesrune=\n"`
+	Chdir       string   `json:"chdir" validate:"excludesrune=\n"`
+	Comment     string   `json:"comment" validate:"excludesrune=\n"`
 	CpusPerTask uint     `json:"cpus_per_task"`
-	JobName     string   `json:"job_name"`
-	Command     string   `json:"command"`
+	JobName     string   `json:"job_name" validate:"excludesrune=\n"`
+	Command     string   `json:"command" validate:"required"`
 	Args        []string `json:"args"`
 }
 

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/slurmer"
-	"log"
 )
 
 func main() {

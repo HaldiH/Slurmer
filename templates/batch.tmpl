@@ -4,4 +4,4 @@
 #SBATCH --chdir={{.Chdir}}
 #SBATCH --comment={{.Comment}}
 #SBATCH --cpus-per-task={{.CpusPerTask}}
-srun {{.Command}} {{range $arg := .Args}}{{$arg}} {{end}}
+'{{.Command | escapeBash}}' {{range $arg := .Args}}'{{$arg | escapeBash}}' {{end}}

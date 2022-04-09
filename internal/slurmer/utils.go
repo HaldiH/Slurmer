@@ -34,8 +34,16 @@ func Error(w http.ResponseWriter, code int) {
 	http.Error(w, http.StatusText(code), code)
 }
 
-func writeBatch(out io.Writer, batch *slurm.BatchProperties) error {
-	tmpl, err := template.ParseFiles(filepath.Join("templates", "batch.tmpl"))
+func WriteBatch(out io.Writer, batch *slurm.BatchProperties) error {
+	funcMap := template.FuncMap{
+		"escapeBash": func(s string) string {
+			return strings.ReplaceAll(s, "'", "'\\''")
+		},
+	}
+
+	tmpl, err := template.New("batch.tmpl").
+		Funcs(funcMap).
+		ParseFiles(filepath.Join("templates", "batch.tmpl"))
 	if err != nil {
 		return err
 	}
