@@ -57,6 +57,17 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 			if err := s.slurmClient.CancelJob(job.SlurmId); err != nil {
 				return err
 			}
+			var err error
+			job.SlurmJob, err = s.slurmClient.GetJob(job.SlurmId)
+			if err != nil {
+				return err
+			}
+			if job.SlurmJob.JobState == "CANCELLED" {
+				job.Status = model.JobStopped
+				if err := s.jobs.UpdateJob(job); err != nil {
+					return err
+				}
+			}
 		}
 
 	}

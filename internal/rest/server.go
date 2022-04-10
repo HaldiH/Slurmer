@@ -159,11 +159,8 @@ func (srv *Server) heartBeat(interval time.Duration) {
 	}
 }
 
-var firstUpdate = true
-
 func (s *Server) updateJobs() error {
 	log.Debug("Update jobs")
-	defer func() { firstUpdate = false }()
 	jobs, err := s.services.job.GetAll()
 	if err != nil {
 		return err
@@ -184,7 +181,7 @@ func (s *Server) updateJobs() error {
 				}
 			} else {
 				job.SlurmJob = slurmJob
-				if firstUpdate && slurmJob.JobState == "CANCELLED" {
+				if slurmJob.JobState == "CANCELLED" {
 					job.Status = model.JobStopped
 				}
 			}
