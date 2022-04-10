@@ -2,8 +2,8 @@
 @port = 8080
 @host = {{hostname}}:{{port}}
 @token = debug
-@app = debug
-@job = debug
+@app = 813d0c07-7a4e-4eae-9b49-fc47fc4e47dc
+@job = 9c47e4d6-ff43-4ab4-b94d-5664db08dfde
 
 
 GET http://{{host}}/apps

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
-	"github.com/ShinoYasx/Slurmer/internal/slurmer"
+	"github.com/ShinoYasx/Slurmer/internal/rest"
 	log "github.com/sirupsen/logrus"
 )
 
 var cfg *appconfig.Config
 
 func init() {
-	cfgFile := flag.String("c", "./config.yaml", "Location of the slurmer config file")
+	cfgFile := flag.String("c", "config.yaml", "Location of the slurmer config file")
 	flag.Parse()
 
 	cfg = new(appconfig.Config)
@@ -74,7 +74,7 @@ func init() {
 }
 
 func main() {
-	server, err := slurmer.New(cfg)
+	server, err := rest.NewServer(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
