@@ -108,11 +108,14 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 			Id:          appUUID})
 	}
 
+	jobService := service.NewJobServiceImpl(slurmClient, slurmCache, jobs)
+	appService := service.NewAppServiceImpl(apps)
+
 	srv := Server{
 		config: config,
 		services: Services{
-			app: service.NewAppServiceImpl(apps),
-			job: service.NewJobServiceImpl(slurmClient, slurmCache, jobs),
+			app: appService,
+			job: jobService,
 		},
 		slurmClient: slurmClient,
 		slurmCache:  slurmCache,
@@ -156,8 +159,11 @@ func (srv *Server) heartBeat(interval time.Duration) {
 	}
 }
 
+var firstUpdate = true
+
 func (s *Server) updateJobs() error {
 	log.Debug("Update jobs")
+	defer func() { firstUpdate = false }()
 	jobs, err := s.services.job.GetAll()
 	if err != nil {
 		return err
@@ -178,7 +184,7 @@ func (s *Server) updateJobs() error {
 				}
 			} else {
 				job.SlurmJob = slurmJob
-				if slurmJob.JobState == "CANCELLED" {
+				if firstUpdate && slurmJob.JobState == "CANCELLED" {
 					job.Status = model.JobStopped
 				}
 			}

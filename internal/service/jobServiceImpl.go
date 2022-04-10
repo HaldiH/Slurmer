@@ -162,7 +162,7 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 			return
 		}
 
-		slurmJob, err := s.slurmClient.GetJob(slurmId)
+		job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -175,7 +175,6 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 			}
 		}
 
-		job.SlurmJob = slurmJob
 		job.Status = model.JobStarted
 		if err := s.jobs.UpdateJob(job); err != nil {
 			log.Panic(err)
@@ -184,7 +183,13 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 		if err := cmd.Wait(); err != nil {
 			log.Panic(err)
 		}
+		log.Debugf("Job %d has terminated", job.SlurmId)
 		// When the job is terminated, mark the job as stopped
+		job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
+		if err != nil {
+			log.Panic(err)
+		}
+
 		job.Status = model.JobStopped
 		if err := s.jobs.UpdateJob(job); err != nil {
 			log.Panic(err)
