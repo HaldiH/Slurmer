@@ -150,36 +150,36 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 		return err
 	}
 
+	words := strings.Split(utils.FirstLine(jobStdout), " ")
+	slurmId, err := strconv.Atoi(words[len(words)-1])
+	if err != nil {
+		errStr, _ := io.ReadAll(jobStderr)
+		log.Error(string(errStr))
+		log.Error(err)
+		return err
+	}
+
+	job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
+	if err != nil {
+		return err
+	}
+
+	if oldSlurmId := job.SlurmId; oldSlurmId != 0 {
+		if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
+			if err != slurm.ErrJobNotFound {
+				return err
+			}
+		}
+	}
+
+	job.Status = model.JobStarted
+	if err := s.jobs.UpdateJob(job); err != nil {
+		return err
+	}
+
 	go func() {
 		// Goroutine will get slurm job id and wait for the job to end, so it can change its status
 		// Read the first line of sbatch to get the slurm job id
-		words := strings.Split(utils.FirstLine(jobStdout), " ")
-		slurmId, err := strconv.Atoi(words[len(words)-1])
-		if err != nil {
-			errStr, _ := io.ReadAll(jobStderr)
-			log.Error(string(errStr))
-			log.Error(err)
-			return
-		}
-
-		job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		if oldSlurmId := job.SlurmId; oldSlurmId != 0 {
-			if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
-				if err != slurm.ErrJobNotFound {
-					log.Panic(err)
-				}
-			}
-		}
-
-		job.Status = model.JobStarted
-		if err := s.jobs.UpdateJob(job); err != nil {
-			log.Panic(err)
-		}
-
 		if err := cmd.Wait(); err != nil {
 			log.Panic(err)
 		}

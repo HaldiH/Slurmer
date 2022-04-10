@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"sync"
 
 	"net/http"
 
@@ -59,6 +60,8 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 	Response(w, job)
 }
 
+var updateJobMutex sync.Mutex
+
 func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	job := r.Context().Value("job").(*model.Job)
 
@@ -72,7 +75,12 @@ func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !updateJobMutex.TryLock() {
+		Error(w, http.StatusConflict)
+		return
+	}
 	MustNone(s.services.job.UpdateStatus(job, status), w)
+	updateJobMutex.Unlock()
 
 	Response(w, status)
 }
