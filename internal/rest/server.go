@@ -181,7 +181,15 @@ func (s *Server) updateJobs() error {
 				}
 			} else {
 				job.SlurmJob = slurmJob
-				if slurmJob.JobState == "CANCELLED" {
+				switch slurmJob.JobState {
+				case slurm.COMPLETED,
+					slurm.CANCELLED,
+					slurm.BOOT_FAIL,
+					slurm.DEADLINE,
+					slurm.FAILED,
+					slurm.NODE_FAIL,
+					slurm.PREEMPTED,
+					slurm.TIMEOUT:
 					job.Status = model.JobStopped
 				}
 			}

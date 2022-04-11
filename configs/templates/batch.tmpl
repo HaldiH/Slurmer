@@ -1,7 +1,8 @@
 #!/bin/sh
-#SBATCH --account={{.Account}}
-#SBTACH --job-name={{.JobName}}
-#SBATCH --chdir={{.Chdir}}
-#SBATCH --comment={{.Comment}}
-#SBATCH --cpus-per-task={{.CpusPerTask}}
-'{{.Command | escapeBash}}' {{range $arg := .Args}}'{{$arg | escapeBash}}' {{end}}
+{{ if .Account}}#SBATCH --account={{.Account}}{{end}}
+{{ if .JobName}}#SBTACH --job-name={{.JobName}}{{end}}
+{{ if .Chdir}}#SBATCH --chdir={{.Chdir}}{{end}}
+{{ if .Comment}}#SBATCH --comment={{.Comment}}{{end}}
+{{ if .CpusPerTask}}#SBATCH --cpus-per-task={{.CpusPerTask}}{{end}}
+
+srun '{{.Command | escapeBash}}'{{range $arg := .Args}} '{{$arg | escapeBash}}'{{end}}

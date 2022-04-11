@@ -62,7 +62,15 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 			if err != nil {
 				return err
 			}
-			if job.SlurmJob.JobState == "CANCELLED" {
+			switch job.SlurmJob.JobState {
+			case slurm.COMPLETED,
+				slurm.CANCELLED,
+				slurm.BOOT_FAIL,
+				slurm.DEADLINE,
+				slurm.FAILED,
+				slurm.NODE_FAIL,
+				slurm.PREEMPTED,
+				slurm.TIMEOUT:
 				job.Status = model.JobStopped
 				if err := s.jobs.UpdateJob(job); err != nil {
 					return err
@@ -84,7 +92,7 @@ func (s *jobServiceImpl) Create(app *model.Application, prop *slurm.BatchPropert
 	jobId := uuid.New()
 	jobDir := filepath.Join(app.Directory, "jobs", jobId.String())
 
-	if err := os.MkdirAll(jobDir, 0770); err != nil {
+	if err := os.MkdirAll(jobDir, 0777); err != nil {
 		return nil, err
 	}
 
@@ -192,18 +200,18 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 		// Goroutine will get slurm job id and wait for the job to end, so it can change its status
 		// Read the first line of sbatch to get the slurm job id
 		if err := cmd.Wait(); err != nil {
-			log.Panic(err)
+			log.Error(err)
 		}
 		log.Debugf("Job %d has terminated", job.SlurmId)
 		// When the job is terminated, mark the job as stopped
 		job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
 		if err != nil {
-			log.Panic(err)
+			log.Error(err)
 		}
 
 		job.Status = model.JobStopped
 		if err := s.jobs.UpdateJob(job); err != nil {
-			log.Panic(err)
+			log.Error(err)
 		}
 	}()
 

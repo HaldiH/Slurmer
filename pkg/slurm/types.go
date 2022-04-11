@@ -21,12 +21,12 @@ type Error struct {
 }
 
 type JobResponseProperties struct {
-	Account          string `json:"account"`
-	JobId            int    `json:"job_id" gorm:"primaryKey"`
-	JobState         string `json:"job_state"`
-	StateDescription string `json:"state_description"`
-	StateReason      string `json:"state_reason"`
-	Name             string `json:"name"`
+	Account          string   `json:"account"`
+	JobId            int      `json:"job_id" gorm:"primaryKey"`
+	JobState         JobState `json:"job_state"`
+	StateDescription string   `json:"state_description"`
+	StateReason      string   `json:"state_reason"`
+	Name             string   `json:"name"`
 }
 
 type JobsResponse struct {
@@ -54,3 +54,32 @@ type SBatchOptions struct {
 	Uid     string `json:"uid"`
 	Gid     string `json:"gid"`
 }
+
+type JobState string
+
+const (
+	BOOT_FAIL     JobState = "BOOT_FAIL"
+	CANCELLED     JobState = "CANCELLED"
+	COMPLETED     JobState = "COMPLETED"
+	CONFIGURING   JobState = "CONFIGURING"
+	COMPLETING    JobState = "COMPLETING"
+	DEADLINE      JobState = "DEADLINE"
+	FAILED        JobState = "FAILED"
+	NODE_FAIL     JobState = "NODE_FAIL"
+	OUT_OF_MEMORY JobState = "OUT_OF_MEMORY"
+	PENDING       JobState = "PENDING"
+	PREEMPTED     JobState = "PREEMPTED"
+	RUNNING       JobState = "RUNNING"
+	RESV_DEL_HOLD JobState = "RESV_DEL_HOLD"
+	REQUEUE_FED   JobState = "REQUEUE_FED"
+	REQUEUE_HOLD  JobState = "REQUEUE_HOLD"
+	REQUEUED      JobState = "REQUEUED"
+	RESIZING      JobState = "RESIZING"
+	REVOKED       JobState = "REVOKED"
+	SIGNALING     JobState = "SIGNALING"
+	SPECIAL_EXIT  JobState = "SPECIAL_EXIT"
+	STAGE_OUT     JobState = "STAGE_OUT"
+	STOPPED       JobState = "STOPPED"
+	SUSPENDED     JobState = "SUSPENDED"
+	TIMEOUT       JobState = "TIMEOUT"
+)
