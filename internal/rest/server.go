@@ -2,8 +2,10 @@ package rest
 
 import (
 	"fmt"
+	"github.com/ShinoYasx/Slurmer/pkg/utils"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -58,7 +60,12 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		log.Fatal("Unimplemented slurm controller: ", config.Slurmer.Connector)
 	}
 
-	if err := os.MkdirAll(config.Slurmer.WorkingDir, os.ModePerm); err != nil {
+	templatesDir := path.Join(config.Slurmer.WorkingDir, "templates")
+	if err := os.MkdirAll(templatesDir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
+	if err := utils.CopyDirectory(config.Slurmer.TemplatesDir, templatesDir); err != nil {
 		return nil, err
 	}
 
