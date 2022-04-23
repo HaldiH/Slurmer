@@ -108,14 +108,11 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 			Id:          appUUID})
 	}
 
-	jobService := service.NewJobServiceImpl(slurmClient, slurmCache, jobs)
-	appService := service.NewAppServiceImpl(apps)
-
 	srv := Server{
 		config: config,
 		services: Services{
-			app: appService,
-			job: jobService,
+			app: service.NewAppServiceImpl(apps),
+			job: service.NewJobServiceImpl(slurmClient, slurmCache, jobs),
 		},
 		slurmClient: slurmClient,
 		slurmCache:  slurmCache,
@@ -138,22 +135,22 @@ func (s *Server) router() http.Handler {
 	return r
 }
 
-func (srv *Server) Listen() error {
-	if err := srv.updateJobs(); err != nil {
+func (s *Server) Listen() error {
+	if err := s.updateJobs(); err != nil {
 		return err
 	}
-	go srv.heartBeat(10 * time.Second)
+	go s.heartBeat(10 * time.Second)
 
-	addr := fmt.Sprintf("%s:%d", srv.config.Slurmer.IP, srv.config.Slurmer.Port)
+	addr := fmt.Sprintf("%s:%d", s.config.Slurmer.IP, s.config.Slurmer.Port)
 	log.Infof("Server listening on %s\n", addr)
-	return http.ListenAndServe(addr, srv.router())
+	return http.ListenAndServe(addr, s.router())
 }
 
-func (srv *Server) heartBeat(interval time.Duration) {
+func (s *Server) heartBeat(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 
 	for range ticker.C {
-		if err := srv.updateJobs(); err != nil {
+		if err := s.updateJobs(); err != nil {
 			panic(err)
 		}
 	}

@@ -18,8 +18,11 @@ func init() {
 	flag.Parse()
 
 	cfg = new(appconfig.Config)
-	err := appconfig.MakeYamlConf(*cfgFile, cfg)
-	if err != nil {
+	if err := appconfig.MakeYamlConf(*cfgFile, cfg); err != nil {
+		panic(err)
+	}
+
+	if err := appconfig.SaveYamlConf(*cfgFile, cfg); err != nil {
 		panic(err)
 	}
 
@@ -42,9 +45,10 @@ func init() {
 			os.ModeDir); err != nil {
 			panic(err)
 		}
-		output, err = os.OpenFile(cfg.Slurmer.Logs.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0440)
-		if err != nil {
+		if f, err := os.OpenFile(cfg.Slurmer.Logs.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0440); err != nil {
 			panic(err)
+		} else {
+			output = f
 		}
 	}
 

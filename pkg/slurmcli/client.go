@@ -1,6 +1,8 @@
 package slurmcli
 
 import (
+	log "github.com/sirupsen/logrus"
+	"io"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -52,10 +54,15 @@ func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
 	return nil, slurm.ErrJobNotFound
 }
 
-func (c *CliClient) SubmitBatch(o slurm.SBatchOptions) (jobID int, err error) {
-	cmd := c.prepareBatch(o)
-
+func (c *CliClient) SubmitJob(o *slurm.SBatchOptions, script string, cwd string) (slurmId int, err error) {
+	cmd := c.prepareBatch(o, script)
+	cmd.Dir = cwd
 	jobStdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return 0, err
+	}
+
+	jobStderr, err := cmd.StderrPipe()
 	if err != nil {
 		return 0, err
 	}
@@ -66,7 +73,18 @@ func (c *CliClient) SubmitBatch(o slurm.SBatchOptions) (jobID int, err error) {
 	}
 
 	words := strings.Split(utils.FirstLine(jobStdout), " ")
-	return strconv.Atoi(words[len(words)-1])
+	slurmId, err = strconv.Atoi(words[len(words)-1])
+	if err != nil {
+		errStr, err := io.ReadAll(jobStderr)
+		if err != nil {
+			return 0, err
+		}
+		log.Error(string(errStr))
+		log.Error(err)
+		return 0, err
+	}
+
+	return slurmId, nil
 }
 
 func (c *CliClient) CancelJob(id int) error {

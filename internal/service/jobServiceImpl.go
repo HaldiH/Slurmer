@@ -48,9 +48,25 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 	switch status {
 	case model.JobStarted:
 		if job.Status == model.JobStopped {
-			if err := s.handleStartJob(job); err != nil {
+			slurmId, err := s.slurmClient.SubmitJob(nil, "batch.sh", job.Directory)
+			if err != nil {
 				return err
 			}
+
+			job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
+			if err != nil {
+				return err
+			}
+
+			job.Status = model.JobStarted
+
+			if err := s.jobs.UpdateJob(job); err != nil {
+				return err
+			}
+
+			//if err := s.handleStartJob(job); err != nil {
+			//	return err
+			//}
 		}
 	case model.JobStopped:
 		if job.Status == model.JobStarted {
@@ -152,6 +168,7 @@ func writeBatch(out io.Writer, batch *slurm.BatchProperties) error {
 	return tmpl.Execute(out, batch)
 }
 
+// Deprecated: use slurm client's methods instead to manage slurm jobs
 func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 	cmd := exec.Command("sbatch", "--wait", "batch.sh")
 	cmd.Dir = job.Directory
@@ -183,6 +200,8 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 		return err
 	}
 
+	// Removes the previous job if we run a new one. Is it useful?
+	// We should not be able to submit a running job anyway.
 	if oldSlurmId := job.SlurmId; oldSlurmId != 0 {
 		if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
 			if err != slurm.ErrJobNotFound {

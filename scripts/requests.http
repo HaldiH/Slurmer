@@ -3,9 +3,9 @@
 @host = {{hostname}}:{{port}}
 @token = debug
 @app = 813d0c07-7a4e-4eae-9b49-fc47fc4e47dc
-@job = 9c47e4d6-ff43-4ab4-b94d-5664db08dfde
+@job = 132067d0-ded7-42c2-b832-a0a20364cd4a
 
-
+###
 GET http://{{host}}/apps
 Accept: application/json
 X-Auth-Token: {{token}}
@@ -30,7 +30,7 @@ Content-Type: application/json
   "job_name": "test_job",
   "cpus_per_task": 1,
   "command": "echo",
-  "args": ["hello, world!"]
+  "args": ["sleep", "10"]
 }
 
 ###

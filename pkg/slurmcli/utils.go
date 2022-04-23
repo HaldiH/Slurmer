@@ -16,8 +16,7 @@ func execCommand[T any](cmd *exec.Cmd) (filledStruct *T, err error) {
 	}
 
 	filledStruct = new(T)
-	err = json.Unmarshal(jsonData, filledStruct)
-	if err != nil {
+	if err = json.Unmarshal(jsonData, filledStruct); err != nil {
 		return nil, err
 	}
 
@@ -46,7 +45,11 @@ func commaSeparatedArray[T any](a []T, stringify func(T) string) (str string) {
 	return str
 }
 
-func (c *CliClient) prepareBatch(o slurm.SBatchOptions) (cmd *exec.Cmd) {
+func (c *CliClient) prepareBatch(o *slurm.SBatchOptions, script string) *exec.Cmd {
+	if o == nil {
+		return exec.Command("sbatch", script)
+	}
+
 	var opts []string
 	if len(o.Account) > 0 {
 		opts = append(opts, "--account", o.Account)
@@ -70,8 +73,5 @@ func (c *CliClient) prepareBatch(o slurm.SBatchOptions) (cmd *exec.Cmd) {
 		opts = append(opts, "--uid", o.Uid)
 	}
 
-	cmd = exec.Command("sbatch", opts...)
-	cmd.Dir = o.Chdir
-
-	return cmd
+	return exec.Command("sbatch", append(opts, script)...)
 }
