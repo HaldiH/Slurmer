@@ -6,6 +6,7 @@ import (
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
 	"github.com/go-chi/chi"
+	log "github.com/sirupsen/logrus"
 )
 
 func filesRouter(r chi.Router) {
@@ -25,7 +26,8 @@ func uploadZip(w http.ResponseWriter, r *http.Request) {
 	if header.Header.Get("Content-Type") == "application/zip" {
 		err := utils.UnzipFile(file, header.Size, job.Directory)
 		if err != nil {
-			panic(err)
+			Error(w, http.StatusBadRequest)
+			log.Warn(err.Error())
 		}
 	}
 }
