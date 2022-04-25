@@ -6,6 +6,7 @@ slurmer:
   port: 8080
   connector: slurmcli
   working_dir: /tmp/slurmer
+  templates_dir: configs/templates
   applications:
     - name: app1
       token: test
