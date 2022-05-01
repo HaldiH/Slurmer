@@ -33,7 +33,7 @@ type Application struct {
 	UUID  string `yaml:"uuid"`
 }
 
-func MakeYamlConf(filename string, config *Config) error {
+func FillConfYaml(filename string, config *Config) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil // We don't want to throw an error il the file doesn't exist.
@@ -54,7 +54,7 @@ func MakeYamlConf(filename string, config *Config) error {
 	return nil
 }
 
-func SaveYamlConf(filename string, config *Config) error {
+func (c *Config) SaveConfYaml(filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -62,14 +62,14 @@ func SaveYamlConf(filename string, config *Config) error {
 	defer f.Close()
 
 	encoder := yaml.NewEncoder(f)
-	if err := encoder.Encode(config); err != nil {
+	if err := encoder.Encode(c); err != nil {
 		return err
 	}
 	return nil
 }
 
-func AddApplication(name string, config *Config) {
-	config.Slurmer.Applications = append(config.Slurmer.Applications, &Application{
+func (c *Config) AddApplication(name string) {
+	c.Slurmer.Applications = append(c.Slurmer.Applications, &Application{
 		Name: name,
 		UUID: uuid.NewString(),
 	})

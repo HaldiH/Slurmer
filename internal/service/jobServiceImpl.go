@@ -63,10 +63,6 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 			if err := s.jobs.UpdateJob(job); err != nil {
 				return err
 			}
-
-			//if err := s.handleStartJob(job); err != nil {
-			//	return err
-			//}
 		}
 	case model.JobStopped:
 		if job.Status == model.JobStarted {
@@ -110,7 +106,9 @@ func (s *jobServiceImpl) Create(app *model.Application, prop *slurm.BatchPropert
 	}
 	defer batchFile.Close()
 
-	if err := writeBatch(batchFile, prop); err != nil {
+	templateFile := filepath.Join(app.Directory, "templates", "batch.tmpl")
+
+	if err := writeBatch(templateFile, batchFile, prop); err != nil {
 		return nil, err
 	}
 
@@ -144,7 +142,7 @@ func (s *jobServiceImpl) Delete(app *model.Application, job *model.Job) error {
 	return nil
 }
 
-func writeBatch(out io.Writer, batch *slurm.BatchProperties) error {
+func writeBatch(templatePath string, out io.Writer, batch *slurm.BatchProperties) error {
 	funcMap := template.FuncMap{
 		"escapeBash": func(s string) string {
 			return strings.ReplaceAll(s, "'", "'\\''")
@@ -153,7 +151,7 @@ func writeBatch(out io.Writer, batch *slurm.BatchProperties) error {
 
 	tmpl, err := template.New("batch.tmpl").
 		Funcs(funcMap).
-		ParseFiles(filepath.Join("templates", "batch.tmpl"))
+		ParseFiles(templatePath)
 	if err != nil {
 		return err
 	}

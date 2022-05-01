@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"net/http"
@@ -24,6 +26,7 @@ func (s *Server) jobsRouter(r chi.Router) {
 	r.Route("/{jobId}", func(r chi.Router) {
 		r.Use(s.jobCtx)
 		r.Get("/", s.getJob)
+		r.Get("/batch", s.getBatch)
 		r.Put("/status", s.updateJobStatus)
 		r.Route("/files", filesRouter)
 	})
@@ -91,7 +94,21 @@ func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	job := ctx.Value("job").(*model.Job)
 
 	MustNone(s.services.job.Delete(app, job), w)
-	Error(w, http.StatusOK)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {
+	job := r.Context().Value("job").(*model.Job)
+
+	batchFile := Must(os.Open(filepath.Join(job.Directory, "batch.sh")))(w)
+	defer batchFile.Close()
+
+	w.Header().Set("Content-Type", "text/plain")
+	if _, err := io.Copy(w, batchFile); err != nil {
+		log.Error(err)
+		Error(w, http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *Server) jobCtx(next http.Handler) http.Handler {

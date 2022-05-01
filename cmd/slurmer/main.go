@@ -14,15 +14,15 @@ import (
 var cfg *appconfig.Config
 
 func init() {
-	cfgFile := flag.String("c", "config.yaml", "Location of the slurmer config file")
+	cfgFile := flag.String("c", "config.yml", "Location of the slurmer config file")
 	flag.Parse()
 
 	cfg = new(appconfig.Config)
-	if err := appconfig.MakeYamlConf(*cfgFile, cfg); err != nil {
+	if err := appconfig.FillConfYaml(*cfgFile, cfg); err != nil {
 		panic(err)
 	}
 
-	if err := appconfig.SaveYamlConf(*cfgFile, cfg); err != nil {
+	if err := cfg.SaveConfYaml(*cfgFile); err != nil {
 		panic(err)
 	}
 

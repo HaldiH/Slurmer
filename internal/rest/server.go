@@ -61,12 +61,12 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		log.Fatal("Unimplemented slurm controller: ", config.Slurmer.Connector)
 	}
 
-	templatesDir := path.Join(config.Slurmer.WorkingDir, "templates")
-	if err := os.MkdirAll(templatesDir, os.ModePerm); err != nil {
+	cfgTemplatesDir, err := filepath.Abs(config.Slurmer.TemplatesDir)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := utils.CopyDirectory(config.Slurmer.TemplatesDir, templatesDir); err != nil {
+	if err := os.MkdirAll(config.Slurmer.WorkingDir, os.ModePerm); err != nil {
 		return nil, err
 	}
 
@@ -104,9 +104,18 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		}
 		appDir := filepath.Join(appsDir, appCfg.UUID)
 		jobsDir := filepath.Join(appDir, "jobs")
+		templatesDir := path.Join(appDir, "templates")
+
 		// Will create app and jobs directory under /applications/{uuid}/jobs/
-		err = os.MkdirAll(jobsDir, os.ModePerm)
-		if err != nil {
+		if err = os.MkdirAll(jobsDir, os.ModePerm); err != nil {
+			return nil, err
+		}
+
+		if err := os.MkdirAll(templatesDir, os.ModePerm); err != nil {
+			return nil, err
+		}
+
+		if err := utils.CopyDirectory(cfgTemplatesDir, templatesDir, false); err != nil {
 			return nil, err
 		}
 
