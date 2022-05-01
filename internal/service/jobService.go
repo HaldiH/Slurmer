@@ -15,6 +15,11 @@ type JobService interface {
 	// is called with `JobStarted`, the job will be executed and vice-versa.
 	// If UpdateStatus is called with the same status as the `job`, then it has no effect.
 	UpdateStatus(job *model.Job, status model.JobStatus) error
+
+	Start(job *model.Job) error
+	Stop(job *model.Job) error
+
+	PruneJob(job *model.Job) error
 	Create(app *model.Application, prop *slurm.BatchProperties) (*model.Job, error)
 	Delete(app *model.Application, job *model.Job) error
 

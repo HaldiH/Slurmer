@@ -27,6 +27,7 @@ func (s *Server) jobsRouter(r chi.Router) {
 		r.Use(s.jobCtx)
 		r.Get("/", s.getJob)
 		r.Delete("/", s.deleteJob)
+		r.Patch("/", s.patchJob)
 		r.Get("/batch", s.getBatch)
 		r.Put("/status", s.updateJobStatus)
 		r.Route("/files", filesRouter)
@@ -96,6 +97,30 @@ func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 
 	MustNone(s.services.job.Delete(app, job), w)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
+	job := r.Context().Value("job").(*model.Job)
+
+	reqBody := Must(io.ReadAll(r.Body))(w)
+	defer r.Body.Close()
+
+	var patchReq model.JobPatchRequest
+	if err := json.Unmarshal(reqBody, &patchReq); err != nil {
+		Error(w, http.StatusBadRequest)
+		return
+	}
+
+	if patchReq.Action != nil {
+		switch *patchReq.Action {
+		case model.JobPrune:
+			MustNone(s.services.job.PruneJob(job), w)
+		case model.JobStart:
+			MustNone(s.services.job.Start(job), w)
+		case model.JobStop:
+			MustNone(s.services.job.Stop(job), w)
+		}
+	}
 }
 
 func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {

@@ -15,6 +15,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var funcMap = template.FuncMap{
+	"escapeBash": func(s string) string {
+		return strings.ReplaceAll(s, "'", "'\\''")
+	},
+}
+
+var batchTmpl = template.New("batch.tmpl").Funcs(funcMap)
+
 type jobServiceImpl struct {
 	jobs        containers.JobsContainer
 	slurmCache  containers.SlurmCache
@@ -87,6 +95,14 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 	return nil
 }
 
+func (s *jobServiceImpl) Start(job *model.Job) error {
+	return s.UpdateStatus(job, model.JobStarted)
+}
+
+func (s *jobServiceImpl) Stop(job *model.Job) error {
+	return s.UpdateStatus(job, model.JobStopped)
+}
+
 func (s *jobServiceImpl) Create(app *model.Application, prop *slurm.BatchProperties) (*model.Job, error) {
 	/*** Debug purposes ***/
 	// if app.Id == uuid.NullUUID {
@@ -147,19 +163,33 @@ func (s *jobServiceImpl) Delete(app *model.Application, job *model.Job) error {
 		return err
 	}
 
+	if err := os.RemoveAll(job.Directory); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *jobServiceImpl) PruneJob(job *model.Job) error {
+	files, err := os.ReadDir(job.Directory)
+	if err != nil {
+		return err
+	}
+
+	for _, dirEntry := range files {
+		if dirEntry.Name() == "batch.sh" {
+			continue
+		}
+
+		if err := os.RemoveAll(filepath.Join(job.Directory, dirEntry.Name())); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func writeBatch(templatePath string, out io.Writer, batch *slurm.BatchProperties) error {
-	funcMap := template.FuncMap{
-		"escapeBash": func(s string) string {
-			return strings.ReplaceAll(s, "'", "'\\''")
-		},
-	}
-
-	tmpl, err := template.New("batch.tmpl").
-		Funcs(funcMap).
-		ParseFiles(templatePath)
+	tmpl, err := batchTmpl.ParseFiles(templatePath)
 	if err != nil {
 		return err
 	}
