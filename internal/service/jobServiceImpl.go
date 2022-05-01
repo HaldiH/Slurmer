@@ -78,15 +78,7 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 			if err != nil {
 				return err
 			}
-			switch job.SlurmJob.JobState {
-			case slurm.COMPLETED,
-				slurm.CANCELLED,
-				slurm.BOOT_FAIL,
-				slurm.DEADLINE,
-				slurm.FAILED,
-				slurm.NODE_FAIL,
-				slurm.PREEMPTED,
-				slurm.TIMEOUT:
+			if job.SlurmJob.JobState.IsStopped() {
 				job.Status = model.JobStopped
 				if err := s.jobs.UpdateJob(job); err != nil {
 					return err

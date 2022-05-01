@@ -2,12 +2,13 @@ package rest
 
 import (
 	"fmt"
-	"github.com/ShinoYasx/Slurmer/pkg/utils"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
+
+	"github.com/ShinoYasx/Slurmer/pkg/utils"
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/containers"
@@ -185,15 +186,7 @@ func (s *Server) updateJobs() error {
 				}
 			} else {
 				job.SlurmJob = slurmJob
-				switch slurmJob.JobState {
-				case slurm.COMPLETED,
-					slurm.CANCELLED,
-					slurm.BOOT_FAIL,
-					slurm.DEADLINE,
-					slurm.FAILED,
-					slurm.NODE_FAIL,
-					slurm.PREEMPTED,
-					slurm.TIMEOUT:
+				if slurmJob.JobState.IsStopped() {
 					job.Status = model.JobStopped
 				}
 			}

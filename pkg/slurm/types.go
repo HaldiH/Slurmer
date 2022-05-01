@@ -83,3 +83,19 @@ const (
 	SUSPENDED     JobState = "SUSPENDED"
 	TIMEOUT       JobState = "TIMEOUT"
 )
+
+func (s JobState) IsStopped() bool {
+	switch s {
+	case COMPLETED,
+		CANCELLED,
+		BOOT_FAIL,
+		DEADLINE,
+		FAILED,
+		NODE_FAIL,
+		PREEMPTED,
+		TIMEOUT:
+		return true
+	default:
+		return false
+	}
+}
