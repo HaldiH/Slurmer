@@ -1,11 +1,12 @@
 package slurmcli
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
@@ -75,12 +76,12 @@ func (c *CliClient) SubmitJob(o *slurm.SBatchOptions, script string, cwd string)
 	words := strings.Split(utils.FirstLine(jobStdout), " ")
 	slurmId, err = strconv.Atoi(words[len(words)-1])
 	if err != nil {
+		log.Error(err)
 		errStr, err := io.ReadAll(jobStderr)
 		if err != nil {
 			return 0, err
 		}
 		log.Error(string(errStr))
-		log.Error(err)
 		return 0, err
 	}
 

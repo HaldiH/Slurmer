@@ -26,6 +26,7 @@ func (s *Server) jobsRouter(r chi.Router) {
 	r.Route("/{jobId}", func(r chi.Router) {
 		r.Use(s.jobCtx)
 		r.Get("/", s.getJob)
+		r.Delete("/", s.deleteJob)
 		r.Get("/batch", s.getBatch)
 		r.Put("/status", s.updateJobStatus)
 		r.Route("/files", filesRouter)

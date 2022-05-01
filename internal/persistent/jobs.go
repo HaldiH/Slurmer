@@ -39,9 +39,8 @@ func (jobsContainer *dbJobs) GetJob(jobId uuid.UUID) (*model.Job, error) {
 
 func (jobsContainer *dbJobs) DeleteJob(jobId uuid.UUID) error {
 	return jobsContainer.db.
-		Select(clause.Associations).
-		Where("job_id = ?", jobId).
-		Delete(&model.Job{}).
+		Select("SlurmJob").
+		Delete(&model.Job{}, jobId).
 		Error
 }
 
@@ -76,8 +75,8 @@ func (jobsContainer *dbJobs) AddAppJob(appId uuid.UUID, job *model.Job) error {
 func (jobsContainer *dbJobs) DeleteAppJob(appId uuid.UUID, jobId uuid.UUID) error {
 	return jobsContainer.db.
 		Select(clause.Associations).
-		Where("app_id = ? AND id = ?", appId, jobId).
-		Delete(&model.Job{}).
+		Where("app_id = ?", appId).
+		Delete(&model.Job{}, jobId).
 		Error
 }
 

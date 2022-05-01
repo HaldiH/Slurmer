@@ -4,16 +4,13 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/ShinoYasx/Slurmer/internal/containers"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
-	"github.com/ShinoYasx/Slurmer/pkg/utils"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,6 +52,10 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 
 			job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
 			if err != nil {
+				return err
+			}
+
+			if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
 				return err
 			}
 
@@ -135,6 +136,13 @@ func (s *jobServiceImpl) Delete(app *model.Application, job *model.Job) error {
 		}
 	}
 
+	// TODO: JobsContainer.DeleteJob should also delete the association to
+	// the SlurmJob, but for an unknown reason, GORM won't delete the
+	// associated job. Need to fix it.
+	if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
+		return err
+	}
+
 	if err := s.jobs.DeleteJob(job.Id); err != nil {
 		return err
 	}
@@ -156,75 +164,6 @@ func writeBatch(templatePath string, out io.Writer, batch *slurm.BatchProperties
 		return err
 	}
 	return tmpl.Execute(out, batch)
-}
-
-// Deprecated: use slurm client's methods instead to manage slurm jobs
-func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
-	cmd := exec.Command("sbatch", "--wait", "batch.sh")
-	cmd.Dir = job.Directory
-	jobStdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-
-	jobStderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	words := strings.Split(utils.FirstLine(jobStdout), " ")
-	slurmId, err := strconv.Atoi(words[len(words)-1])
-	if err != nil {
-		errStr, _ := io.ReadAll(jobStderr)
-		log.Error(string(errStr))
-		log.Error(err)
-		return err
-	}
-
-	job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
-	if err != nil {
-		return err
-	}
-
-	// Removes the previous job if we run a new one. Is it useful?
-	// We should not be able to submit a running job anyway.
-	if oldSlurmId := job.SlurmId; oldSlurmId != 0 {
-		if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
-			if err != slurm.ErrJobNotFound {
-				return err
-			}
-		}
-	}
-
-	job.Status = model.JobStarted
-	if err := s.jobs.UpdateJob(job); err != nil {
-		return err
-	}
-
-	go func() {
-		// Goroutine will get slurm job id and wait for the job to end, so it can change its status
-		// Read the first line of sbatch to get the slurm job id
-		if err := cmd.Wait(); err != nil {
-			log.Error(err)
-		}
-		log.Debugf("Job %d has terminated", job.SlurmId)
-		// When the job is terminated, mark the job as stopped
-		job.SlurmJob, err = s.slurmClient.GetJob(slurmId)
-		if err != nil {
-			log.Error(err)
-		}
-
-		job.Status = model.JobStopped
-		if err := s.jobs.UpdateJob(job); err != nil {
-			log.Error(err)
-		}
-	}()
-
-	return nil
 }
 
 func (s *jobServiceImpl) PollJobsStatus() error {
