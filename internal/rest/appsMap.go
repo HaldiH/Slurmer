@@ -1,8 +1,6 @@
 package rest
 
 import (
-	"errors"
-
 	"github.com/ShinoYasx/Slurmer/internal/containers"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
@@ -27,7 +25,7 @@ func (m *appsMap) GetAllApp() []*model.Application {
 func (m *appsMap) GetApp(id uuid.UUID) (*model.Application, error) {
 	app := (*m)[id]
 	if app == nil {
-		return nil, errors.New("Cannot find app with id " + id.String())
+		return nil, containers.ErrAppNotFound
 	}
 	return app, nil
 }

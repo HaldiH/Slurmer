@@ -119,8 +119,8 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 	srv := Server{
 		config: config,
 		services: Services{
-			app: service.NewAppServiceImpl(apps),
-			job: service.NewJobServiceImpl(slurmClient, slurmCache, jobs),
+			app: service.NewAppService(apps),
+			job: service.NewJobService(slurmClient, slurmCache, jobs),
 		},
 		slurmClient: slurmClient,
 		slurmCache:  slurmCache,
@@ -144,7 +144,7 @@ func (s *Server) router() http.Handler {
 }
 
 func (s *Server) Listen() error {
-	if err := s.updateJobs(); err != nil {
+	if err := s.services.job.PollJobsStatus(); err != nil {
 		return err
 	}
 	go s.heartBeat(10 * time.Second)
@@ -158,43 +158,8 @@ func (s *Server) heartBeat(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 
 	for range ticker.C {
-		if err := s.updateJobs(); err != nil {
+		if err := s.services.job.PollJobsStatus(); err != nil {
 			panic(err)
 		}
 	}
-}
-
-func (s *Server) updateJobs() error {
-	log.Debug("Update jobs")
-	jobs, err := s.services.job.GetAll()
-	if err != nil {
-		return err
-	}
-	for _, job := range jobs {
-		if job.Status == model.JobStarted || job.SlurmJob != nil {
-			slurmJob, err := s.slurmClient.GetJob(job.SlurmId)
-			if err != nil {
-				if err == slurm.ErrJobNotFound {
-					if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
-						return err
-					}
-					job.SlurmId = 0
-					job.SlurmJob = nil
-					job.Status = model.JobStopped
-				} else {
-					return err
-				}
-			} else {
-				job.SlurmJob = slurmJob
-				if slurmJob.JobState.IsStopped() {
-					job.Status = model.JobStopped
-				}
-			}
-
-			if err := s.jobs.UpdateJob(job); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

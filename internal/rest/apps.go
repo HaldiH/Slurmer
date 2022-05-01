@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ShinoYasx/Slurmer/internal/containers"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) appsRouter(r chi.Router) {
@@ -46,7 +48,12 @@ func (s *Server) appCtx(next http.Handler) http.Handler {
 
 		app, err := s.services.app.Get(id)
 		if err != nil {
-			Error(w, http.StatusNotFound)
+			if err == containers.ErrAppNotFound {
+				Error(w, http.StatusNotFound)
+			} else {
+				Error(w, http.StatusInternalServerError)
+				log.Error(err)
+			}
 			return
 		}
 

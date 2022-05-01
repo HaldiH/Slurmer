@@ -13,7 +13,7 @@ type appServiceImpl struct {
 	apps containers.AppsContainer
 }
 
-func NewAppServiceImpl(apps containers.AppsContainer) AppService {
+func NewAppService(apps containers.AppsContainer) AppService {
 	return &appServiceImpl{apps: apps}
 }
 

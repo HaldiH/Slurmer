@@ -24,7 +24,7 @@ type jobServiceImpl struct {
 	slurmClient slurm.Client
 }
 
-func NewJobServiceImpl(client slurm.Client, cache containers.SlurmCache, container containers.JobsContainer) JobService {
+func NewJobService(client slurm.Client, cache containers.SlurmCache, container containers.JobsContainer) JobService {
 	return &jobServiceImpl{
 		jobs:        container,
 		slurmClient: client,
@@ -226,6 +226,41 @@ func (s *jobServiceImpl) handleStartJob(job *model.Job) error {
 		}
 	}()
 
+	return nil
+}
+
+func (s *jobServiceImpl) PollJobsStatus() error {
+	log.Debug("Polling jobs")
+	jobs, err := s.GetAll()
+	if err != nil {
+		return err
+	}
+	for _, job := range jobs {
+		if job.Status == model.JobStarted || job.SlurmJob != nil {
+			slurmJob, err := s.slurmClient.GetJob(job.SlurmId)
+			if err != nil {
+				if err == slurm.ErrJobNotFound {
+					if err := s.slurmCache.DeleteSlurmJob(job.SlurmId); err != nil {
+						return err
+					}
+					job.SlurmId = 0
+					job.SlurmJob = nil
+					job.Status = model.JobStopped
+				} else {
+					return err
+				}
+			} else {
+				job.SlurmJob = slurmJob
+				if slurmJob.JobState.IsStopped() {
+					job.Status = model.JobStopped
+				}
+			}
+
+			if err := s.jobs.UpdateJob(job); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
