@@ -1,9 +1,9 @@
 @hostname = 127.0.0.1
 @port = 8080
 @host = {{hostname}}:{{port}}
-@token = debug
-@app = 813d0c07-7a4e-4eae-9b49-fc47fc4e47dc
-@job = 132067d0-ded7-42c2-b832-a0a20364cd4a
+@token = yourdebugtoken
+@app = yourappid
+@job = yourjobid
 
 ###
 GET http://{{host}}/apps
@@ -30,7 +30,7 @@ Content-Type: application/json
   "job_name": "test_job",
   "cpus_per_task": 1,
   "command": "echo",
-  "args": ["sleep", "10"]
+  "args": ["hello", ",", "world"]
 }
 
 ###
@@ -59,7 +59,7 @@ GET http://{{host}}/apps/{{app}}/jobs/{{job}}/files
 Accept: application/zip
 X-Auth-Token: {{token}}
 
-###
+### Sends to the job the archive `test.zip` and unzip it in its directory
 POST http://{{host}}/apps/{{app}}/jobs/{{job}}/files
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 X-Auth-Token: {{token}}
@@ -70,3 +70,39 @@ Content-Type: application/zip
 
 < ./test.zip
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+GET http://{{host}}/apps/{{app}}/jobs/{{job}}/batch
+X-Auth-Token: {{token}}
+
+###
+GET http://{{host}}/apps/{{app}}/jobs/{{job}}/out
+X-Auth-Token: {{token}}
+
+###
+DELETE http://{{host}}/apps/{{app}}/jobs/{{job}}
+X-Auth-Token: {{token}}
+
+###
+PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+X-Auth-Token: {{token}}
+
+{
+  "action": "prune"
+}
+
+###
+PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+X-Auth-Token: {{token}}
+
+{
+  "action": "start"
+}
+
+###
+PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+X-Auth-Token: {{token}}
+
+{
+  "action": "stop"
+}

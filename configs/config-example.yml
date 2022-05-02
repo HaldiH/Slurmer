@@ -9,8 +9,8 @@ slurmer:
   templates_dir: configs/templates
   applications:
     - name: app1
-      token: test
-      uuid: a9a5fc66-9bed-4a13-874a-d8d7d1756224
+      token: averycomplicatedchallenge
+      uuid: a9a5fc66-9bed-4a13-874a-d8d7d1756224 # a random app uuid
   logs:
     # available: text, json
     format: text
