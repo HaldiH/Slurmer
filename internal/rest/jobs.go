@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,6 +30,7 @@ func (s *Server) jobsRouter(r chi.Router) {
 		r.Delete("/", s.deleteJob)
 		r.Patch("/", s.patchJob)
 		r.Get("/batch", s.getBatch)
+		r.Get("/out", s.getOut)
 		r.Put("/status", s.updateJobStatus)
 		r.Route("/files", filesRouter)
 	})
@@ -97,6 +99,20 @@ func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 
 	MustNone(s.services.job.Delete(app, job), w)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) getOut(w http.ResponseWriter, r *http.Request) {
+	job := r.Context().Value("job").(*model.Job)
+
+	file, err := os.Open(filepath.Join(job.Directory, fmt.Sprintf("slurm-%d.out", job.SlurmId)))
+	if err != nil {
+		log.Debug(err)
+		Error(w, http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "test/plain")
+	io.Copy(w, file)
 }
 
 func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {

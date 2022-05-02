@@ -3,6 +3,8 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func SetContentType(contentType string) func(http.Handler) http.Handler {
@@ -34,7 +36,7 @@ func Must[T any](v T, err error) func(http.ResponseWriter) T {
 	return func(w http.ResponseWriter) T {
 		if err != nil {
 			Error(w, http.StatusInternalServerError)
-			panic(err)
+			log.Error(err)
 		}
 		return v
 	}
