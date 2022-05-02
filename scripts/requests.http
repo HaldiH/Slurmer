@@ -1,27 +1,23 @@
-@hostname = 127.0.0.1
-@port = 8080
-@host = {{hostname}}:{{port}}
-@token = yourdebugtoken
-@app = yourappid
-@job = yourjobid
+@baseUrl = http://{{host}}:{{port}}
+@job = ff064d2f-28e1-4e45-9113-ddfaedad7f36
 
 ###
-GET http://{{host}}/apps
+GET {{baseUrl}}/apps
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}/apps/{{app}}
+GET {{baseUrl}}/apps/{{app}}
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}/apps/{{app}}/jobs
+GET {{baseUrl}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-POST http://{{host}}/apps/{{app}}/jobs
+POST {{baseUrl}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -34,7 +30,7 @@ Content-Type: application/json
 }
 
 ###
-PUT http://{{host}}/apps/{{app}}/jobs/{{job}}/status
+PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -42,7 +38,7 @@ Content-Type: application/json
 "started"
 
 ###
-PUT http://{{host}}/apps/{{app}}/jobs/{{job}}/status
+PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
@@ -50,17 +46,17 @@ Content-Type: application/json
 "stopped"
 
 ###
-GET http://{{host}}/apps/{{app}}/jobs/{{job}}
+GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 Accept: application/json
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}/apps/{{app}}/jobs/{{job}}/files
+GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/files
 Accept: application/zip
 X-Auth-Token: {{token}}
 
 ### Sends to the job the archive `test.zip` and unzip it in its directory
-POST http://{{host}}/apps/{{app}}/jobs/{{job}}/files
+POST {{baseUrl}}/apps/{{app}}/jobs/{{job}}/files
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 X-Auth-Token: {{token}}
 
@@ -72,19 +68,19 @@ Content-Type: application/zip
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ###
-GET http://{{host}}/apps/{{app}}/jobs/{{job}}/batch
+GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/batch
 X-Auth-Token: {{token}}
 
 ###
-GET http://{{host}}/apps/{{app}}/jobs/{{job}}/out
+GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/out
 X-Auth-Token: {{token}}
 
 ###
-DELETE http://{{host}}/apps/{{app}}/jobs/{{job}}
+DELETE {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
 
 ###
-PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
 
 {
@@ -92,7 +88,7 @@ X-Auth-Token: {{token}}
 }
 
 ###
-PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
 
 {
@@ -100,7 +96,7 @@ X-Auth-Token: {{token}}
 }
 
 ###
-PATCH http://{{host}}/apps/{{app}}/jobs/{{job}}
+PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
 
 {
