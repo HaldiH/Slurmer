@@ -158,7 +158,7 @@ func (s *Server) Listen() error {
 	}
 	go s.heartBeat(10 * time.Second)
 
-	addr := fmt.Sprintf("%s:%d", s.config.Slurmer.IP, s.config.Slurmer.Port)
+	addr := fmt.Sprintf("%s:%s", s.config.Slurmer.IP, s.config.Slurmer.Port)
 	log.Infof("Server listening on %s\n", addr)
 	return http.ListenAndServe(addr, s.router())
 }

@@ -1,7 +1,9 @@
 package appconfig
 
 import (
+	"errors"
 	"os"
+	"reflect"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -13,7 +15,7 @@ type Config struct {
 	} `yaml:"slurmrest"`
 	Slurmer struct {
 		IP           string         `yaml:"ip"`
-		Port         uint16         `yaml:"port"`
+		Port         string         `yaml:"port"`
 		WorkingDir   string         `yaml:"working_dir"`
 		TemplatesDir string         `yaml:"templates_dir"`
 		Connector    string         `yaml:"connector"`
@@ -51,6 +53,42 @@ func FillConfYaml(filename string, config *Config) error {
 		}
 	}
 
+	return nil
+}
+
+func FillConfEnv(config *Config) error {
+	confMap := map[any]string{
+		&config.Slurmrest.URL: "SLURMREST_URL",
+
+		&config.Slurmer.IP:           "SLURMER_IP",
+		&config.Slurmer.Port:         "SLURMER_PORT",
+		&config.Slurmer.WorkingDir:   "SLURMER_WD",
+		&config.Slurmer.TemplatesDir: "SLURMER_TEMPLATES_DIR",
+		&config.Slurmer.Connector:    "SLURMER_CONNECTOR",
+		&config.Slurmer.Logs.Format:  "SLURMER_LOGS_FORMAT",
+		&config.Slurmer.Logs.Level:   "SLURMER_LOGS_LEVEL",
+		&config.Slurmer.Logs.Stdout:  "SLURMER_LOGS_STDOUT",
+		&config.Slurmer.Logs.Output:  "SLURMER_LOGS_OUTPUT",
+	}
+
+	for ptr, key := range confMap {
+		if val, b := os.LookupEnv(key); b {
+			ptrRv := reflect.ValueOf(ptr)
+			if ptrRv.Kind() != reflect.Pointer {
+				return errors.New("Invalid value type: " + ptrRv.Type().Name())
+			}
+
+			rv := ptrRv.Elem()
+			switch rv.Kind() {
+			case reflect.String:
+				rv.SetString(val)
+			case reflect.Bool:
+				rv.SetBool(val != "" && val != "no" && val != "false")
+			default:
+				return errors.New("Not implemented config type: " + rv.Type().Name())
+			}
+		}
+	}
 	return nil
 }
 

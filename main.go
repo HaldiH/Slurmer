@@ -26,6 +26,10 @@ func init() {
 		panic(err)
 	}
 
+	if err := appconfig.FillConfEnv(cfg); err != nil {
+		panic(err)
+	}
+
 	var formatter log.Formatter
 	switch cfg.Slurmer.Logs.Format {
 	case "text":
