@@ -37,18 +37,18 @@ func (s *Server) jobsRouter(r chi.Router) {
 }
 
 func (s *Server) listJobs(w http.ResponseWriter, r *http.Request) {
-	app := r.Context().Value("app").(*model.Application)
+	app := getCtxApp(r.Context())
 	jobs := Must(s.services.job.GetAppAll(app))(w)
 	Response(w, jobs)
 }
 
 func (s *Server) getJob(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*model.Job)
+	job := getCtxJob(r.Context())
 	Response(w, job)
 }
 
 func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
-	app := r.Context().Value("app").(*model.Application)
+	app := getCtxApp(r.Context())
 
 	reqBody := Must(io.ReadAll(r.Body))(w)
 	defer r.Body.Close()
@@ -70,7 +70,7 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 var updateJobMutex sync.Mutex
 
 func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*model.Job)
+	job := getCtxJob(r.Context())
 
 	reqBody := Must(io.ReadAll(r.Body))(w)
 	defer r.Body.Close()
@@ -94,15 +94,15 @@ func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	app := ctx.Value("app").(*model.Application)
-	job := ctx.Value("job").(*model.Job)
+	app := getCtxApp(ctx)
+	job := getCtxJob(ctx)
 
 	MustNone(s.services.job.Delete(app, job), w)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) getOut(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*model.Job)
+	job := getCtxJob(r.Context())
 
 	file, err := os.Open(filepath.Join(job.Directory, fmt.Sprintf("slurm-%d.out", job.SlurmId)))
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Server) getOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*model.Job)
+	job := getCtxJob(r.Context())
 
 	reqBody := Must(io.ReadAll(r.Body))(w)
 	defer r.Body.Close()
@@ -140,7 +140,7 @@ func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {
-	job := r.Context().Value("job").(*model.Job)
+	job := getCtxJob(r.Context())
 
 	batchFile := Must(os.Open(filepath.Join(job.Directory, "batch.sh")))(w)
 	defer batchFile.Close()
@@ -155,7 +155,8 @@ func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) jobCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app := r.Context().Value("app").(*model.Application)
+		ctx := r.Context()
+		app := getCtxApp(ctx)
 		jobId, err := uuid.Parse(chi.URLParam(r, "jobId"))
 		if err != nil {
 			Error(w, http.StatusNotFound)
@@ -171,7 +172,11 @@ func (s *Server) jobCtx(next http.Handler) http.Handler {
 			panic(err)
 		}
 
-		ctx := context.WithValue(r.Context(), "job", job)
+		ctx = context.WithValue(ctx, jobKey, job)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func getCtxJob(ctx context.Context) *model.Job {
+	return ctx.Value(jobKey).(*model.Job)
 }

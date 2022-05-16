@@ -16,7 +16,7 @@ type RestClient struct {
 	slurmrestHost string
 }
 
-func NewRestClient(slurmrestdURL string) (*RestClient, error) {
+func NewRestClient(slurmrestdURL string) (slurm.Client, error) {
 	u, err := url.Parse(slurmrestdURL)
 	if err != nil {
 		return nil, err
@@ -53,10 +53,10 @@ func NewRestClient(slurmrestdURL string) (*RestClient, error) {
 	return slurmClient, nil
 }
 
-func (c *RestClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
+func (c *RestClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) {
 	var jobs slurm.JobsResponse
 	err := c.get("/jobs", &jobs)
-	return &jobs, err
+	return jobs.Jobs, err
 }
 
 func (c *RestClient) GetJob(id int) (*slurm.JobResponseProperties, error)

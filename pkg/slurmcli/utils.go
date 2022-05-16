@@ -23,9 +23,10 @@ func execCommand[T any](cmd *exec.Cmd) (filledStruct *T, err error) {
 	return filledStruct, nil
 }
 
-func contains[T comparable](s []T, e T) bool {
-	for _, v := range s {
-		if v == e {
+// contains return true if `slice` contains `element` otherwise return false
+func contains[T comparable](slice []T, element T) bool {
+	for _, v := range slice {
+		if v == element {
 			return true
 		}
 	}

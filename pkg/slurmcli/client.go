@@ -14,40 +14,47 @@ import (
 
 type CliClient struct{}
 
-func NewCliClient() *CliClient {
+func NewCliClient() slurm.Client {
 	return &CliClient{}
 }
 
-// GetJobs gives a slice of all slurm jobs.
-func (c *CliClient) GetJobs(ids ...int) (*slurm.JobsResponse, error) {
-	var res *slurm.JobsResponse
+func (c *CliClient) getAllJobs() ([]slurm.JobResponseProperties, error) {
 	// We cannot specify wanted jobs in the request since the json flag will ignore the -j option
 	res, err := execCommand[slurm.JobsResponse](exec.Command("squeue", "--json"))
 	if err != nil {
 		return nil, err
 	}
 
+	return res.Jobs, nil
+}
+
+// GetJobs gives a slice of all slurm jobs.
+func (c *CliClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) {
+	allJobs, err := c.getAllJobs()
+	if err != nil {
+		return nil, err
+	}
+
 	if len(ids) == 0 {
-		return res, nil
+		return allJobs, nil
 	}
 
 	var jobs []slurm.JobResponseProperties
-	for _, job := range res.Jobs {
+	for _, job := range allJobs {
 		if contains(ids, job.JobId) {
 			jobs = append(jobs, job)
 		}
 	}
 
-	res.Jobs = jobs
-	return res, nil
+	return jobs, nil
 }
 
 func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
-	jobsResponse, err := c.GetJobs()
+	allJobs, err := c.getAllJobs()
 	if err != nil {
 		return nil, err
 	}
-	for _, job := range jobsResponse.Jobs {
+	for _, job := range allJobs {
 		if job.JobId == id {
 			return &job, nil
 		}

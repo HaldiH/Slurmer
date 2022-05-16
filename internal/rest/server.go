@@ -33,6 +33,13 @@ type Services struct {
 	job service.JobService
 }
 
+type requestContextKey uint
+
+const (
+	appKey requestContextKey = iota
+	jobKey
+)
+
 type Server struct {
 	config      *appconfig.Config
 	services    Services

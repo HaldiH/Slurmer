@@ -27,7 +27,7 @@ func (s *Server) listApps(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getApp(w http.ResponseWriter, r *http.Request) {
 	// Debug route
-	app := r.Context().Value("app").(*model.Application)
+	app := getCtxApp(r.Context())
 	Response(w, app)
 }
 
@@ -62,7 +62,11 @@ func (s *Server) appCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "app", app)
+		ctx := context.WithValue(r.Context(), appKey, app)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func getCtxApp(ctx context.Context) *model.Application {
+	return ctx.Value(appKey).(*model.Application)
 }

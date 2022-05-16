@@ -5,12 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Launch Slurmer",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "cmd/slurmer/main.go",
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceFolder}"
         }
     ]
 }
