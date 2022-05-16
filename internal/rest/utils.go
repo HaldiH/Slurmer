@@ -16,7 +16,7 @@ func SetContentType(contentType string) func(http.Handler) http.Handler {
 	}
 }
 
-func Response(w http.ResponseWriter, v interface{}) {
+func Response(w http.ResponseWriter, v any) {
 	jsonData, err := json.Marshal(v)
 	if err != nil {
 		Error(w, http.StatusInternalServerError)

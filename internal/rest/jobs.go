@@ -172,11 +172,11 @@ func (s *Server) jobCtx(next http.Handler) http.Handler {
 			panic(err)
 		}
 
-		ctx = context.WithValue(ctx, jobKey, job)
+		ctx = context.WithValue(ctx, JobKey, job)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func getCtxJob(ctx context.Context) *model.Job {
-	return ctx.Value(jobKey).(*model.Job)
+	return ctx.Value(JobKey).(*model.Job)
 }

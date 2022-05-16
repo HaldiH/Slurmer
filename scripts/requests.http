@@ -1,10 +1,13 @@
 @baseUrl = http://{{host}}:{{port}}
-@job = ff064d2f-28e1-4e45-9113-ddfaedad7f36
+@job = fcc9fd19-108a-4b78-b9bd-5e39bcac9538
+
+@jwt = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJ0ZXN0IjoiY291Y291In0.YA5uoM4Jm5dAdSbAMZq_fFx9SsfgaekDA-Pbtve_CCU
 
 ###
 GET {{baseUrl}}/apps
 Accept: application/json
 X-Auth-Token: {{token}}
+Authorization: Bearer {{jwt}}
 
 ###
 GET {{baseUrl}}/apps/{{app}}

@@ -8,18 +8,18 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ShinoYasx/Slurmer/pkg/utils"
-
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/containers"
+	jwtmiddleware "github.com/ShinoYasx/Slurmer/internal/jwt-middleware"
 	"github.com/ShinoYasx/Slurmer/internal/persistent"
 	"github.com/ShinoYasx/Slurmer/internal/service"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
+	"github.com/ShinoYasx/Slurmer/pkg/utils"
+
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
-
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -33,19 +33,21 @@ type Services struct {
 	job service.JobService
 }
 
-type requestContextKey uint
+type requestCtxKey uint
 
 const (
-	appKey requestContextKey = iota
-	jobKey
+	AppKey requestCtxKey = iota
+	JobKey
+	ClientInfoKey
 )
 
 type Server struct {
-	config      *appconfig.Config
-	services    Services
-	slurmClient slurm.Client
-	slurmCache  containers.SlurmCache
-	jobs        containers.JobsContainer
+	config         *appconfig.Config
+	services       Services
+	slurmClient    slurm.Client
+	slurmCache     containers.SlurmCache
+	jobs           containers.JobsContainer
+	authMiddleware *jwtmiddleware.JWTMiddleware
 }
 
 func NewServer(config *appconfig.Config) (*Server, error) {
@@ -138,9 +140,10 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 			app: service.NewAppService(apps),
 			job: service.NewJobService(slurmClient, slurmCache, jobs),
 		},
-		slurmClient: slurmClient,
-		slurmCache:  slurmCache,
-		jobs:        jobs,
+		slurmClient:    slurmClient,
+		slurmCache:     slurmCache,
+		jobs:           jobs,
+		authMiddleware: jwtmiddleware.New(config.JWTPublicKey),
 	}
 
 	return &srv, nil
@@ -155,6 +158,7 @@ func (s *Server) router() http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	})
+	r.Use(s.authMiddleware.Authentication)
 	r.Route("/apps", s.appsRouter)
 	return r
 }

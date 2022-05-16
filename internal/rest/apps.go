@@ -62,11 +62,11 @@ func (s *Server) appCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), appKey, app)
+		ctx := context.WithValue(r.Context(), AppKey, app)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func getCtxApp(ctx context.Context) *model.Application {
-	return ctx.Value(appKey).(*model.Application)
+	return ctx.Value(AppKey).(*model.Application)
 }
