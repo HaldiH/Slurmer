@@ -10,7 +10,7 @@ import (
 
 	"github.com/ShinoYasx/Slurmer/internal/appconfig"
 	"github.com/ShinoYasx/Slurmer/internal/containers"
-	jwtmiddleware "github.com/ShinoYasx/Slurmer/internal/jwt-middleware"
+	oidcmiddleware "github.com/ShinoYasx/Slurmer/internal/oidc-middleware"
 	"github.com/ShinoYasx/Slurmer/internal/persistent"
 	"github.com/ShinoYasx/Slurmer/internal/service"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
@@ -47,7 +47,7 @@ type Server struct {
 	slurmClient    slurm.Client
 	slurmCache     containers.SlurmCache
 	jobs           containers.JobsContainer
-	authMiddleware *jwtmiddleware.JWTMiddleware
+	authMiddleware *oidcmiddleware.OIDCMiddleware
 }
 
 func NewServer(config *appconfig.Config) (*Server, error) {
@@ -134,6 +134,11 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 			Id:          appUUID})
 	}
 
+	authMiddleware, err := oidcmiddleware.New(config)
+	if err != nil {
+		return nil, err
+	}
+
 	srv := Server{
 		config: config,
 		services: Services{
@@ -143,7 +148,7 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		slurmClient:    slurmClient,
 		slurmCache:     slurmCache,
 		jobs:           jobs,
-		authMiddleware: jwtmiddleware.New(config.JWTPublicKey),
+		authMiddleware: authMiddleware,
 	}
 
 	return &srv, nil

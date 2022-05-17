@@ -27,7 +27,10 @@ type Config struct {
 			Level  string `yaml:"level"`
 		} `yaml:"logs"`
 	} `yaml:"slurmer"`
-	JWTPublicKey string `yaml:"jwt_public_key"`
+	OIDC struct {
+		Issuer   string `yaml:"issuer"`
+		Audience string `yaml:"audience"`
+	}
 }
 
 type Application struct {

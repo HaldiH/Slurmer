@@ -1,7 +1,18 @@
 @baseUrl = http://{{host}}:{{port}}
-@job = fcc9fd19-108a-4b78-b9bd-5e39bcac9538
+@job = fcc9fd19-108a-4b78-b9bd-5e39bcac9538blank
 
-@jwt = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJ0ZXN0IjoiY291Y291In0.YA5uoM4Jm5dAdSbAMZq_fFx9SsfgaekDA-Pbtve_CCU
+@jwt = 
+
+###
+POST {{$dotenv OIDC_ISSUER}}/oauth/token
+Content-Type: application/json
+
+{
+  "client_id": "{{$dotenv OIDC_CLIENT_ID}}",
+  "client_secret": "{{$dotenv OIDC_CLIENT_SECRET}}",
+  "audience": "{{$dotenv OIDC_AUDIENCE}}",
+  "grant_type": "client_credentials"
+}
 
 ###
 GET {{baseUrl}}/apps
