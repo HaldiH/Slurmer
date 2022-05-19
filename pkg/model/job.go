@@ -30,7 +30,7 @@ const (
 	JobStop  JobAction = "stop"
 )
 
-var ErrUnknownJobStatus error = errors.New("Unknown job status")
+var ErrUnknownJobStatus error = errors.New("unknown job status")
 
 type JobStatus uint
 

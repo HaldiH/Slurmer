@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 
@@ -16,10 +15,9 @@ import (
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
-	"github.com/ShinoYasx/Slurmer/pkg/utils"
+	"github.com/google/uuid"
 
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -107,31 +105,14 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 	}
 
 	for _, appCfg := range config.Slurmer.Applications {
-		appUUID, err := uuid.Parse(appCfg.UUID)
-		if err != nil {
-			return nil, err
-		}
-		appDir := filepath.Join(appsDir, appCfg.UUID)
-		jobsDir := filepath.Join(appDir, "jobs")
-		templatesDir := path.Join(appDir, "templates")
-
-		// Will create app and jobs directory under /applications/{uuid}/jobs/
-		if err = os.MkdirAll(jobsDir, os.ModePerm); err != nil {
-			return nil, err
-		}
-
-		if err := os.MkdirAll(templatesDir, os.ModePerm); err != nil {
-			return nil, err
-		}
-
-		if err := utils.CopyDirectory(cfgTemplatesDir, templatesDir, false); err != nil {
-			return nil, err
-		}
-
-		apps.AddApp(appUUID, &model.Application{
+		app := model.Application{
+			Name:        appCfg.Name,
 			AccessToken: appCfg.Token,
-			Directory:   appDir,
-			Id:          appUUID})
+			Id:          uuid.MustParse(appCfg.UUID),
+		}
+
+		service.InitAppDir(&app, cfgTemplatesDir)
+		apps.AddApp(app.Id, &app)
 	}
 
 	authMiddleware, err := oidcmiddleware.New(config)
@@ -139,10 +120,15 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		return nil, err
 	}
 
+	appService, err := service.NewAppService(apps, config.Slurmer.ConfigPath, cfgTemplatesDir)
+	if err != nil {
+		return nil, err
+	}
+
 	srv := Server{
 		config: config,
 		services: Services{
-			app: service.NewAppService(apps),
+			app: appService,
 			job: service.NewJobService(slurmClient, slurmCache, jobs),
 		},
 		slurmClient:    slurmClient,
@@ -163,7 +149,7 @@ func (s *Server) router() http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.Use(s.authMiddleware.Authentication)
+	// r.Use(s.authMiddleware.Authentication)
 	r.Route("/apps", s.appsRouter)
 	return r
 }

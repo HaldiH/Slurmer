@@ -7,11 +7,13 @@ import (
 
 type AppService interface {
 	// GetAll returns all the applications registered in its container.
-	GetAll() []*model.Application
+	GetAll() ([]*model.Application, error)
 
 	// Get returns the application corresponding to the given `id`, or set
 	// error to `container.ErrAppNotFound` if the id doen't exists.
 	Get(id uuid.UUID) (*model.Application, error)
+
+	Add(app *model.Application) error
 
 	// MarshalJSON should return the list of all registered apps in JSON.
 	MarshalJSON() ([]byte, error)

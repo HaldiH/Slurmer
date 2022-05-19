@@ -11,13 +11,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var cfg *appconfig.Config
+var cfg = &appconfig.Config{
+	Slurmer: appconfig.Slurmer{
+		IP:           "0.0.0.0",
+		Port:         "8080",
+		TemplatesDir: "templates",
+		Connector:    "slurmcli",
+	},
+}
 
 func init() {
 	cfgFile := flag.String("c", "config.yml", "Location of the slurmer config file")
 	flag.Parse()
 
-	cfg = new(appconfig.Config)
 	if err := appconfig.FillConfYaml(*cfgFile, cfg); err != nil {
 		panic(err)
 	}
@@ -82,6 +88,7 @@ func init() {
 }
 
 func main() {
+	log.Debug(*cfg)
 	server, err := rest.NewServer(cfg)
 	if err != nil {
 		log.Fatal(err)

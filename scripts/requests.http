@@ -17,8 +17,13 @@ Content-Type: application/json
 ###
 GET {{baseUrl}}/apps
 Accept: application/json
-X-Auth-Token: {{token}}
 Authorization: Bearer {{jwt}}
+
+###
+POST {{baseUrl}}/apps
+Accept: application/json
+
+{ "name": "debug" }
 
 ###
 GET {{baseUrl}}/apps/{{app}}

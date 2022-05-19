@@ -1,8 +1,12 @@
 package appconfig
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/google/uuid"
@@ -12,31 +16,45 @@ import (
 type Config struct {
 	Slurmrest struct {
 		URL string `yaml:"url"`
-	} `yaml:"slurmrest"`
-	Slurmer struct {
-		IP           string         `yaml:"ip"`
-		Port         string         `yaml:"port"`
-		WorkingDir   string         `yaml:"working_dir"`
-		TemplatesDir string         `yaml:"templates_dir"`
-		Connector    string         `yaml:"connector"`
-		Applications []*Application `yaml:"applications"`
-		Logs         struct {
-			Format string `yaml:"format"`
-			Stdout bool   `yaml:"stdout"`
-			Output string `yaml:"output"`
-			Level  string `yaml:"level"`
-		} `yaml:"logs"`
-	} `yaml:"slurmer"`
-	OIDC struct {
-		Issuer   string `yaml:"issuer"`
-		Audience string `yaml:"audience"`
-	}
+	} `yaml:"slurmrest,omitempty"`
+	Slurmer Slurmer `yaml:"slurmer"`
+	OIDC    OIDC
+}
+
+type Slurmer struct {
+	IP           string         `yaml:"ip"`
+	Port         string         `yaml:"port"`
+	WorkingDir   string         `yaml:"working_dir"`
+	TemplatesDir string         `yaml:"templates_dir"`
+	Connector    string         `yaml:"connector"`
+	Applications []*Application `yaml:"applications"`
+	Logs         struct {
+		Format string `yaml:"format"`
+		Stdout bool   `yaml:"stdout"`
+		Output string `yaml:"output"`
+		Level  string `yaml:"level"`
+	} `yaml:"logs"`
+	ConfigPath string `yaml:"-"`
+}
+
+type OIDC struct {
+	Issuer   string `yaml:"issuer"`
+	Audience string `yaml:"audience"`
 }
 
 type Application struct {
 	Name  string `yaml:"name"`
 	Token string `yaml:"token"`
 	UUID  string `yaml:"uuid"`
+}
+
+func GenAppToken(r io.Reader) (string, error) {
+	token := make([]byte, 32)
+
+	if _, err := r.Read(token); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(token), nil
 }
 
 func FillConfYaml(filename string, config *Config) error {
@@ -51,9 +69,28 @@ func FillConfYaml(filename string, config *Config) error {
 		return err
 	}
 
+	config.Slurmer.ConfigPath, err = filepath.Abs(filename)
+	if err != nil {
+		return nil
+	}
+
 	for _, app := range config.Slurmer.Applications {
-		if app.UUID == "" {
+		if len(app.UUID) == 0 {
 			app.UUID = uuid.NewString()
+		} else {
+			appUUID, err := uuid.Parse(app.UUID)
+			if err != nil {
+				return err
+			}
+			app.UUID = appUUID.String()
+		}
+
+		if len(app.Token) == 0 {
+			appToken, err := GenAppToken(rand.Reader)
+			if err != nil {
+				return err
+			}
+			app.Token = appToken
 		}
 	}
 
@@ -108,11 +145,4 @@ func (c *Config) SaveConfYaml(filename string) error {
 		return err
 	}
 	return nil
-}
-
-func (c *Config) AddApplication(name string) {
-	c.Slurmer.Applications = append(c.Slurmer.Applications, &Application{
-		Name: name,
-		UUID: uuid.NewString(),
-	})
 }

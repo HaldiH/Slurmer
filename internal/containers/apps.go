@@ -7,11 +7,12 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrAppNotFound error = errors.New("Cannot find an app with such uuid")
+var ErrAppNotFound error = errors.New("cannot find an app with such uuid")
+var ErrAppAlreadyExists error = errors.New("app already registered")
 
 type AppsContainer interface {
-	GetAllApp() []*model.Application
+	GetAllApp() ([]*model.Application, error)
 	GetApp(id uuid.UUID) (*model.Application, error)
-	AddApp(id uuid.UUID, app *model.Application)
-	DeleteApp(id uuid.UUID)
+	AddApp(id uuid.UUID, app *model.Application) error
+	DeleteApp(id uuid.UUID) error
 }
