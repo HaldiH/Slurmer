@@ -149,7 +149,9 @@ func (s *Server) router() http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	})
-	// r.Use(s.authMiddleware.Authentication)
+	if s.config.OIDC.Enabled {
+		r.Use(s.authMiddleware.Authentication)
+	}
 	r.Route("/apps", s.appsRouter)
 	return r
 }

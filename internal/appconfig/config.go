@@ -38,6 +38,7 @@ type Slurmer struct {
 }
 
 type OIDC struct {
+	Enabled  bool   `yaml:"enabled"`
 	Issuer   string `yaml:"issuer"`
 	Audience string `yaml:"audience"`
 }
