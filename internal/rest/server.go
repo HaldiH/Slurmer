@@ -24,8 +24,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-const appsDir = "applications"
-
 type Services struct {
 	app service.AppService
 	job service.JobService
@@ -81,7 +79,7 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		return nil, err
 	}
 
-	db, err := gorm.Open(sqlite.Open("slurmer.db"), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(appconfig.SlurmerDB), &gorm.Config{
 		Logger: logger.Discard,
 	})
 	if err != nil {
@@ -100,7 +98,7 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(appsDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(appconfig.AppsDir, os.ModePerm); err != nil {
 		return nil, err
 	}
 
@@ -111,13 +109,18 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 			Id:          uuid.MustParse(appCfg.UUID),
 		}
 
-		service.InitAppDir(&app, cfgTemplatesDir)
+		if err := service.InitAppDir(&app, cfgTemplatesDir); err != nil {
+			return nil, err
+		}
 		apps.AddApp(app.Id, &app)
 	}
 
-	authMiddleware, err := oidcmiddleware.New(config)
-	if err != nil {
-		return nil, err
+	var authMiddleware *oidcmiddleware.OIDCMiddleware
+	if config.OIDC.Enabled {
+		authMiddleware, err = oidcmiddleware.New(config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	appService, err := service.NewAppService(apps, config.Slurmer.ConfigPath, cfgTemplatesDir)

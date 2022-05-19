@@ -13,6 +13,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	AppsDir   = "applications"
+	SlurmerDB = "slurmer.db"
+)
+
 type Config struct {
 	Slurmrest struct {
 		URL string `yaml:"url"`
@@ -28,13 +33,15 @@ type Slurmer struct {
 	TemplatesDir string         `yaml:"templates_dir"`
 	Connector    string         `yaml:"connector"`
 	Applications []*Application `yaml:"applications"`
-	Logs         struct {
-		Format string `yaml:"format"`
-		Stdout bool   `yaml:"stdout"`
-		Output string `yaml:"output"`
-		Level  string `yaml:"level"`
-	} `yaml:"logs"`
-	ConfigPath string `yaml:"-"`
+	Logs         Logs           `yaml:"logs"`
+	ConfigPath   string         `yaml:"-"`
+}
+
+type Logs struct {
+	Format string `yaml:"format"`
+	Stdout bool   `yaml:"stdout"`
+	Output string `yaml:"output"`
+	Level  string `yaml:"level"`
 }
 
 type OIDC struct {
@@ -59,6 +66,12 @@ func GenAppToken(r io.Reader) (string, error) {
 }
 
 func FillConfYaml(filename string, config *Config) error {
+	var err error
+	config.Slurmer.ConfigPath, err = filepath.Abs(filename)
+	if err != nil {
+		return err
+	}
+
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil // We don't want to throw an error il the file doesn't exist.
@@ -68,11 +81,6 @@ func FillConfYaml(filename string, config *Config) error {
 	decoder := yaml.NewDecoder(f)
 	if err := decoder.Decode(config); err != nil {
 		return err
-	}
-
-	config.Slurmer.ConfigPath, err = filepath.Abs(filename)
-	if err != nil {
-		return nil
 	}
 
 	for _, app := range config.Slurmer.Applications {
@@ -111,6 +119,9 @@ func FillConfEnv(config *Config) error {
 		&config.Slurmer.Logs.Level:   "SLURMER_LOGS_LEVEL",
 		&config.Slurmer.Logs.Stdout:  "SLURMER_LOGS_STDOUT",
 		&config.Slurmer.Logs.Output:  "SLURMER_LOGS_OUTPUT",
+		&config.OIDC.Enabled:         "SLURMER_OIDC_ENABLED",
+		&config.OIDC.Issuer:          "SLURMER_OIDC_ISSUER",
+		&config.OIDC.Audience:        "SLURMER_OIDC_AUDIENCE",
 	}
 
 	for ptr, key := range confMap {

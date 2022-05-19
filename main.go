@@ -11,12 +11,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Default config values
 var cfg = &appconfig.Config{
 	Slurmer: appconfig.Slurmer{
 		IP:           "0.0.0.0",
 		Port:         "8080",
 		TemplatesDir: "templates",
 		Connector:    "slurmcli",
+		Logs: appconfig.Logs{
+			Format: "text",
+			Stdout: true,
+			Level:  "debug",
+		},
 	},
 }
 
@@ -88,7 +94,7 @@ func init() {
 }
 
 func main() {
-	log.Debug(*cfg)
+	log.Debug("Config: ", *cfg)
 	server, err := rest.NewServer(cfg)
 	if err != nil {
 		log.Fatal(err)

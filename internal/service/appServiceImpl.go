@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -17,10 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const appsDir = "applications"
-
 func InitAppDir(app *model.Application, tplDir string) error {
-	app.Directory = filepath.Join(appsDir, app.Id.String())
+	app.Directory = filepath.Join(appconfig.AppsDir, app.Id.String())
 	jobsDir := filepath.Join(app.Directory, "jobs")
 	templatesDir := path.Join(app.Directory, "templates")
 
@@ -32,10 +31,12 @@ func InitAppDir(app *model.Application, tplDir string) error {
 	if err := os.MkdirAll(templatesDir, os.ModePerm); err != nil {
 		return err
 	}
-	log.Debug("Config templates dir:", tplDir)
-	log.Debug("App templates dir:", templatesDir)
 
+	if _, err := os.Stat(tplDir); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
 	if err := utils.CopyDirectory(tplDir, templatesDir, false); err != nil {
+		log.Error("Error in templates directory copy")
 		return err
 	}
 
