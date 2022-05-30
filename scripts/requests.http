@@ -1,5 +1,5 @@
 @baseUrl = http://{{host}}:{{port}}
-@job = fcc9fd19-108a-4b78-b9bd-5e39bcac9538blank
+@job = 36346d88-6dd5-46fd-9f1e-6631c64aa8de
 
 @jwt = 
 
@@ -45,7 +45,7 @@ Content-Type: application/json
   "job_name": "test_job",
   "cpus_per_task": 1,
   "command": "echo",
-  "args": ["hello", ",", "world"]
+  "args": ["hello", ",", "baobab", "'`echo pwnd`'"]
 }
 
 ###
