@@ -1,35 +1,57 @@
 package slurmcli
 
 import (
+	"encoding/json"
 	"io"
 	"os/exec"
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
+	"github.com/ShinoYasx/Slurmer/pkg/cliexecutor"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/utils"
 )
 
-type CliClient struct{}
-
-func NewCliClient() slurm.Client {
-	return &CliClient{}
+type cliClient struct {
+	executor cliexecutor.Executor
 }
 
-func (c *CliClient) getAllJobs() ([]slurm.JobResponseProperties, error) {
-	// We cannot specify wanted jobs in the request since the json flag will ignore the -j option
-	res, err := execCommand[slurm.JobsResponse](exec.Command("squeue", "--json"))
+func NewCliClient(executor cliexecutor.Executor) slurm.Client {
+	return &cliClient{
+		executor: executor,
+	}
+}
+
+func (c *cliClient) getAllJobs() ([]slurm.JobResponseProperties, error) {
+	var res slurm.JobsResponse
+	cmd := exec.Command("squeue", "--json")
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
+	defer stdout.Close()
 
-	return res.Jobs, nil
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+	defer stderr.Close()
+
+	decoder := json.NewDecoder(stdout)
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	if err := decoder.Decode(&res); err != nil {
+		return nil, err
+	}
+
+	return res.Jobs, cliexecutor.ReadStderr(stderr, cmd.Wait())
 }
 
 // GetJobs gives a slice of all slurm jobs.
-func (c *CliClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) {
+func (c *cliClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) {
 	allJobs, err := c.getAllJobs()
 	if err != nil {
 		return nil, err
@@ -49,7 +71,7 @@ func (c *CliClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) {
 	return jobs, nil
 }
 
-func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
+func (c *cliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
 	allJobs, err := c.getAllJobs()
 	if err != nil {
 		return nil, err
@@ -62,39 +84,37 @@ func (c *CliClient) GetJob(id int) (*slurm.JobResponseProperties, error) {
 	return nil, slurm.ErrJobNotFound
 }
 
-func (c *CliClient) SubmitJob(o *slurm.SBatchOptions, script string, cwd string) (slurmId int, err error) {
-	cmd := c.prepareBatch(o, script)
-	cmd.Dir = cwd
-	jobStdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return 0, err
-	}
+func (c *cliClient) SubmitJob(user string, o *slurm.SBatchOptions, script string, workingDir string) (slurmId int, err error) {
+	cmdCtx := c.prepareBatch(o, script, user)
+	cmdCtx.Dir = workingDir
 
-	jobStderr, err := cmd.StderrPipe()
-	if err != nil {
-		return 0, err
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return 0, err
-	}
-
-	words := strings.Split(utils.FirstLine(jobStdout), " ")
-	slurmId, err = strconv.Atoi(words[len(words)-1])
-	if err != nil {
-		log.Error(err)
-		errStr, err := io.ReadAll(jobStderr)
-		if err != nil {
-			return 0, err
+	if err := c.executor.ExecCommand(cmdCtx, func(r io.Reader, waitErr error) error {
+		if waitErr != nil {
+			return nil
 		}
-		log.Error(string(errStr))
+
+		firstLine, err := utils.FirstLine(r)
+		if err != nil {
+			return err
+		}
+
+		words := strings.Split(firstLine, " ")
+		slurmId, err = strconv.Atoi(words[len(words)-1])
+		if err != nil {
+			return err
+		}
+		return nil
+	}, cliexecutor.ReadStderr); err != nil {
 		return 0, err
 	}
 
 	return slurmId, nil
 }
 
-func (c *CliClient) CancelJob(id int) error {
-	return exec.Command("scancel", strconv.Itoa(id)).Start()
+func (c *cliClient) CancelJob(user string, ids ...int) error {
+	return c.executor.ExecCommand(&cliexecutor.CommandContext{
+		User:    user,
+		Command: "scancel",
+		Args:    map2(ids, strconv.Itoa),
+	}, nil, cliexecutor.ReadStderr)
 }

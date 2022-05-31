@@ -11,6 +11,7 @@ import (
 type Job struct {
 	Name      string                       `json:"name"`
 	Status    JobStatus                    `json:"status"`
+	UserName  string                       `json:"user_name"`
 	Id        uuid.UUID                    `json:"id" gorm:"primaryKey"`
 	SlurmId   int                          `json:"slurm_id"`
 	SlurmJob  *slurm.JobResponseProperties `json:"slurm_job" gorm:"foreignKey:SlurmId"`

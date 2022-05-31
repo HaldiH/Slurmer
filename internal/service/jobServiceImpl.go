@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/ShinoYasx/Slurmer/internal/containers"
+	"github.com/ShinoYasx/Slurmer/pkg/cliexecutor"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/google/uuid"
@@ -27,13 +29,15 @@ type jobServiceImpl struct {
 	jobs        containers.JobsContainer
 	slurmCache  containers.SlurmCache
 	slurmClient slurm.Client
+	executor    cliexecutor.Executor
 }
 
-func NewJobService(client slurm.Client, cache containers.SlurmCache, container containers.JobsContainer) JobService {
+func NewJobService(client slurm.Client, cache containers.SlurmCache, container containers.JobsContainer, executor cliexecutor.Executor) JobService {
 	return &jobServiceImpl{
 		jobs:        container,
 		slurmClient: client,
 		slurmCache:  cache,
+		executor:    executor,
 	}
 }
 
@@ -53,7 +57,7 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 	switch status {
 	case model.JobStarted:
 		if job.Status == model.JobStopped {
-			slurmId, err := s.slurmClient.SubmitJob(nil, "batch.sh", job.Directory)
+			slurmId, err := s.slurmClient.SubmitJob(job.UserName, nil, "batch.sh", job.Directory)
 			if err != nil {
 				return err
 			}
@@ -75,7 +79,7 @@ func (s *jobServiceImpl) UpdateStatus(job *model.Job, status model.JobStatus) er
 		}
 	case model.JobStopped:
 		if job.Status == model.JobStarted {
-			if err := s.slurmClient.CancelJob(job.SlurmId); err != nil {
+			if err := s.slurmClient.CancelJob(job.UserName, job.SlurmId); err != nil {
 				return err
 			}
 			var err error
@@ -103,37 +107,42 @@ func (s *jobServiceImpl) Stop(job *model.Job) error {
 	return s.UpdateStatus(job, model.JobStopped)
 }
 
-func (s *jobServiceImpl) Create(app *model.Application, prop *slurm.BatchProperties) (*model.Job, error) {
-	/*** Debug purposes ***/
-	// if app.Id == uuid.NullUUID {
-	// 	jobId = "debug"
-	// } else {
-	// 	jobId = uuid.New()
-	// }
+func (s *jobServiceImpl) Create(user string, app *model.Application, prop *slurm.BatchProperties) (*model.Job, error) {
 	jobId := uuid.New()
 	jobDir := filepath.Join(app.Directory, "jobs", jobId.String())
 
-	if err := os.MkdirAll(jobDir, 0777); err != nil {
+	cmdCtx := cliexecutor.NewCommandContext(user, "mkdir", "-p", jobDir)
+	if err := s.executor.ExecCommand(cmdCtx, nil, cliexecutor.ReadStderr); err != nil {
 		return nil, err
 	}
 
-	batchFile, err := os.Create(filepath.Join(jobDir, "batch.sh"))
+	templateFile := filepath.Join(app.Directory, "templates", "batch.tmpl")
+	buf := new(bytes.Buffer)
+
+	if err := writeBatch(templateFile, buf, prop); err != nil {
+		return nil, err
+	}
+
+	stdin, err := io.ReadAll(buf)
 	if err != nil {
 		return nil, err
 	}
-	defer batchFile.Close()
 
-	templateFile := filepath.Join(app.Directory, "templates", "batch.tmpl")
-
-	if err := writeBatch(templateFile, batchFile, prop); err != nil {
-		return nil, err
+	cmdCtx = &cliexecutor.CommandContext{
+		User:    user,
+		Command: "tee",
+		Args:    []string{"batch.sh"},
+		Dir:     jobDir,
+		Stdin:   string(stdin),
 	}
+	s.executor.ExecCommand(cmdCtx, nil, cliexecutor.ReadStderr)
 
 	job := model.Job{
 		Name:      prop.JobName,
 		Status:    model.JobStopped,
 		Id:        jobId,
 		Directory: jobDir,
+		UserName:  user,
 	}
 
 	if err := s.jobs.AddAppJob(app.Id, &job); err != nil {
@@ -146,7 +155,7 @@ func (s *jobServiceImpl) Create(app *model.Application, prop *slurm.BatchPropert
 func (s *jobServiceImpl) Delete(app *model.Application, job *model.Job) error {
 	// First we need to stop pending/running job
 	if job.Status == model.JobStarted {
-		err := s.slurmClient.CancelJob(job.SlurmId)
+		err := s.slurmClient.CancelJob(job.UserName, job.SlurmId)
 		if err != nil {
 			return err
 		}
@@ -163,7 +172,12 @@ func (s *jobServiceImpl) Delete(app *model.Application, job *model.Job) error {
 		return err
 	}
 
-	if err := os.RemoveAll(job.Directory); err != nil {
+	cmdCtx := cliexecutor.CommandContext{
+		User:    job.UserName,
+		Command: "rm",
+		Args:    []string{"-rf", job.Directory},
+	}
+	if err := s.executor.ExecCommand(&cmdCtx, nil, cliexecutor.ReadStderr); err != nil {
 		return err
 	}
 
@@ -181,7 +195,13 @@ func (s *jobServiceImpl) PruneJob(job *model.Job) error {
 			continue
 		}
 
-		if err := os.RemoveAll(filepath.Join(job.Directory, dirEntry.Name())); err != nil {
+		cmdCtx := cliexecutor.CommandContext{
+			User:    job.UserName,
+			Command: "rm",
+			Args:    []string{"-rf", dirEntry.Name()},
+			Dir:     job.Directory,
+		}
+		if err := s.executor.ExecCommand(&cmdCtx, nil, cliexecutor.ReadStderr); err != nil {
 			return err
 		}
 	}

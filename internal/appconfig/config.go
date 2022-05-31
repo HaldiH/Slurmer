@@ -34,6 +34,7 @@ type Slurmer struct {
 	Connector    string         `yaml:"connector"`
 	Applications []*Application `yaml:"applications"`
 	Logs         Logs           `yaml:"logs"`
+	ExecutorPath string         `yaml:"executor_path"`
 	ConfigPath   string         `yaml:"-"`
 }
 

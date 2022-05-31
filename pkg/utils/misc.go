@@ -7,10 +7,13 @@ import (
 	"strings"
 )
 
-func FirstLine(r io.Reader) string {
+func FirstLine(r io.Reader) (string, error) {
 	bio := bufio.NewReader(r)
-	line, _ := bio.ReadBytes('\n')
-	return strings.TrimRight(string(line), "\n")
+	line, err := bio.ReadBytes('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(string(line), "\n"), nil
 }
 
 func MapToJSONArray[K comparable, V any](m map[K]V) ([]byte, error) {

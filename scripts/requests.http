@@ -1,5 +1,5 @@
 @baseUrl = http://{{host}}:{{port}}
-@job = 36346d88-6dd5-46fd-9f1e-6631c64aa8de
+@job = 2f7de1fd-92a3-4af0-b144-99f42771b0e0
 
 @jwt = 
 
@@ -34,12 +34,14 @@ X-Auth-Token: {{token}}
 GET {{baseUrl}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ###
 POST {{baseUrl}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
+User: {{user}}
 
 {
   "job_name": "test_job",
@@ -53,6 +55,7 @@ PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
+User: {{user}}
 
 "started"
 
@@ -61,6 +64,7 @@ PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/status
 Accept: application/json
 X-Auth-Token: {{token}}
 Content-Type: application/json
+User: {{user}}
 
 "stopped"
 
@@ -68,16 +72,19 @@ Content-Type: application/json
 GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 Accept: application/json
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ###
 GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/files
 Accept: application/zip
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ### Sends to the job the archive `test.zip` and unzip it in its directory
 POST {{baseUrl}}/apps/{{app}}/jobs/{{job}}/files
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
 Content-Disposition: form-data; name="job_dir"; filename="test.zip"
@@ -89,18 +96,22 @@ Content-Type: application/zip
 ###
 GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/batch
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ###
 GET {{baseUrl}}/apps/{{app}}/jobs/{{job}}/out
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ###
 DELETE {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
+User: {{user}}
 
 ###
 PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
+User: {{user}}
 
 {
   "action": "prune"
@@ -109,6 +120,7 @@ X-Auth-Token: {{token}}
 ###
 PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
+User: {{user}}
 
 {
   "action": "start"
@@ -117,6 +129,7 @@ X-Auth-Token: {{token}}
 ###
 PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
 X-Auth-Token: {{token}}
+User: {{user}}
 
 {
   "action": "stop"

@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"strconv"
 	"syscall"
+
+	"github.com/ShinoYasx/Slurmer/pkg/cliexecutor"
 )
 
 const shell = "/bin/sh"
@@ -19,13 +23,68 @@ const (
 func main() {
 	uidPtr := flag.Int("uid", 0, "UID to run the program with (only if root or SlurmUser)")
 	userPtr := flag.String("user", "", "User to run the program with (only if root or SlurmUser)")
-	cmdPtr := flag.String("command", "", "command to execute")
+	cmdPtr := flag.String("command", "", "Command to execute")
+	stdinPtr := flag.Bool("stdin", false, "Read command from stdin")
 	flag.Parse()
 
 	die := func(reason string, code int) {
 		fmt.Fprintln(flag.CommandLine.Output(), reason)
-		fmt.Fprintf(flag.CommandLine.Output(), "Try '%s --help' for more information.\n", os.Args[0])
+		if !*stdinPtr {
+			fmt.Fprintf(flag.CommandLine.Output(), "Try '%s --help' for more information.\n", os.Args[0])
+		}
 		os.Exit(code)
+	}
+
+	if *stdinPtr {
+		var cmdCtx cliexecutor.CommandContext
+		decoder := json.NewDecoder(os.Stdin)
+		if err := decoder.Decode(&cmdCtx); err != nil {
+			panic(err)
+		}
+
+		u, err := user.Lookup(cmdCtx.User)
+		if err != nil {
+			die("user not found", 2)
+		}
+
+		uid, err := strconv.Atoi(u.Uid)
+		if err != nil {
+			panic(err)
+		}
+
+		if !(minUid <= uid && uid <= maxUid) {
+			die(fmt.Sprintf("user id must be between %d and %d", minUid, maxUid), 3)
+		}
+
+		ruid := syscall.Getuid()
+		if ruid != slurmUid && ruid != 0 {
+			die("bad calling user", 4)
+		}
+
+		if err := syscall.Setuid(uid); err != nil {
+			die(err.Error(), 5)
+		}
+
+		if len(cmdCtx.Dir) > 0 {
+			os.Chdir(cmdCtx.Dir)
+		}
+
+		cmd := exec.Command(cmdCtx.Command, cmdCtx.Args...)
+
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			panic(err)
+		}
+		stdin.Write([]byte(cmdCtx.Stdin))
+		stdin.Close()
+
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			die(err.Error(), 6)
+		}
+		return
 	}
 
 	isUidPassed := false

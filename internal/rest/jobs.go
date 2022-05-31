@@ -22,6 +22,7 @@ import (
 )
 
 func (s *Server) jobsRouter(r chi.Router) {
+	r.Use(s.userCtx)
 	r.Get("/", s.listJobs)
 	r.Post("/", s.createJob)
 	r.Route("/{jobId}", func(r chi.Router) {
@@ -38,7 +39,12 @@ func (s *Server) jobsRouter(r chi.Router) {
 
 func (s *Server) listJobs(w http.ResponseWriter, r *http.Request) {
 	app := getCtxApp(r.Context())
-	jobs := Must(s.services.job.GetAppAll(app))(w)
+	jobs, err := s.services.job.GetAppAll(app)
+	if err != nil {
+		Error(w, http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 	Response(w, jobs)
 }
 
@@ -48,13 +54,15 @@ func (s *Server) getJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
-	app := getCtxApp(r.Context())
-
-	reqBody := Must(io.ReadAll(r.Body))(w)
-	defer r.Body.Close()
+	ctx := r.Context()
+	app := getCtxApp(ctx)
+	user := ctx.Value(UserKey).(string)
 
 	var prop slurm.BatchProperties
-	MustNone(json.Unmarshal(reqBody, &prop), w)
+	if err := json.NewDecoder(r.Body).Decode(&prop); err != nil {
+		Error(w, http.StatusBadRequest)
+		return
+	}
 
 	validate := validator.New()
 	if err := validate.Struct(&prop); err != nil {
@@ -62,7 +70,12 @@ func (s *Server) createJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job := Must(s.services.job.Create(app, &prop))(w)
+	job, err := s.services.job.Create(user, app, &prop)
+	if err != nil {
+		Error(w, http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	Response(w, job)
 }
@@ -72,12 +85,8 @@ var updateJobMutex sync.Mutex
 func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 	job := getCtxJob(r.Context())
 
-	reqBody := Must(io.ReadAll(r.Body))(w)
-	defer r.Body.Close()
-
 	var status model.JobStatus
-	if err := json.Unmarshal(reqBody, &status); err != nil {
-		log.Warn(err)
+	if err := json.NewDecoder(r.Body).Decode(&status); err != nil {
 		Error(w, http.StatusBadRequest)
 		return
 	}
@@ -86,7 +95,11 @@ func (s *Server) updateJobStatus(w http.ResponseWriter, r *http.Request) {
 		Error(w, http.StatusConflict)
 		return
 	}
-	MustNone(s.services.job.UpdateStatus(job, status), w)
+	if err := s.services.job.UpdateStatus(job, status); err != nil {
+		Error(w, http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 	updateJobMutex.Unlock()
 
 	Response(w, status)
@@ -97,7 +110,11 @@ func (s *Server) deleteJob(w http.ResponseWriter, r *http.Request) {
 	app := getCtxApp(ctx)
 	job := getCtxJob(ctx)
 
-	MustNone(s.services.job.Delete(app, job), w)
+	if err := s.services.job.Delete(app, job); err != nil {
+		Error(w, http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -111,30 +128,35 @@ func (s *Server) getOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "test/plain")
+	w.Header().Set("Content-Type", "text/plain")
 	io.Copy(w, file)
 }
 
 func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
 	job := getCtxJob(r.Context())
 
-	reqBody := Must(io.ReadAll(r.Body))(w)
-	defer r.Body.Close()
-
 	var patchReq model.JobPatchRequest
-	if err := json.Unmarshal(reqBody, &patchReq); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&patchReq); err != nil {
 		Error(w, http.StatusBadRequest)
 		return
 	}
 
 	if patchReq.Action != nil {
+		var err error
 		switch *patchReq.Action {
 		case model.JobPrune:
-			MustNone(s.services.job.PruneJob(job), w)
+			err = s.services.job.PruneJob(job)
 		case model.JobStart:
-			MustNone(s.services.job.Start(job), w)
+			err = s.services.job.Start(job)
 		case model.JobStop:
-			MustNone(s.services.job.Stop(job), w)
+			err = s.services.job.Stop(job)
+		default:
+			http.Error(w, "Unknown action: "+string(*patchReq.Action), http.StatusBadRequest)
+			return
+		}
+		if err != nil {
+			Error(w, http.StatusInternalServerError)
+			return
 		}
 	}
 }
@@ -142,7 +164,12 @@ func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {
 	job := getCtxJob(r.Context())
 
-	batchFile := Must(os.Open(filepath.Join(job.Directory, "batch.sh")))(w)
+	batchFile, err := os.Open(filepath.Join(job.Directory, "batch.sh"))
+	if err != nil {
+		log.Error(err)
+		Error(w, http.StatusInternalServerError)
+		return
+	}
 	defer batchFile.Close()
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -169,10 +196,24 @@ func (s *Server) jobCtx(next http.Handler) http.Handler {
 				Error(w, http.StatusNotFound)
 				return
 			}
-			panic(err)
+			log.Panic(err)
 		}
 
 		ctx = context.WithValue(ctx, JobKey, job)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *Server) userCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := r.Header.Get("User")
+
+		if len(user) == 0 {
+			Error(w, http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), UserKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -61,6 +61,6 @@ func (c *RestClient) GetJobs(ids ...int) ([]slurm.JobResponseProperties, error) 
 
 func (c *RestClient) GetJob(id int) (*slurm.JobResponseProperties, error)
 
-func (c *RestClient) SubmitJob(o *slurm.SBatchOptions, script string, cwd string) (int, error)
+func (c *RestClient) SubmitJob(user string, o *slurm.SBatchOptions, script string, cwd string) (int, error)
 
-func (c *RestClient) CancelJob(id int) error
+func (c *RestClient) CancelJob(user string, ids ...int) error

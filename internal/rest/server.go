@@ -12,6 +12,7 @@ import (
 	oidcmiddleware "github.com/ShinoYasx/Slurmer/internal/oidc-middleware"
 	"github.com/ShinoYasx/Slurmer/internal/persistent"
 	"github.com/ShinoYasx/Slurmer/internal/service"
+	"github.com/ShinoYasx/Slurmer/pkg/cliexecutor"
 	"github.com/ShinoYasx/Slurmer/pkg/model"
 	"github.com/ShinoYasx/Slurmer/pkg/slurm"
 	"github.com/ShinoYasx/Slurmer/pkg/slurmcli"
@@ -34,6 +35,7 @@ type requestCtxKey uint
 const (
 	AppKey requestCtxKey = iota
 	JobKey
+	UserKey
 	ClientInfoKey
 )
 
@@ -51,8 +53,9 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		config.Slurmer.WorkingDir = "."
 	}
 
-	var slurmClient slurm.Client
+	executor := cliexecutor.NewExecutor(config.Slurmer.ExecutorPath)
 
+	var slurmClient slurm.Client
 	switch config.Slurmer.Connector {
 	// rest client not implemented yet
 	// case "slurmrest":
@@ -61,7 +64,7 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 	// 		return nil, err
 	// 	}
 	case "slurmcli":
-		slurmClient = slurmcli.NewCliClient()
+		slurmClient = slurmcli.NewCliClient(executor)
 	default:
 		log.Fatal("Unimplemented slurm controller: ", config.Slurmer.Connector)
 	}
@@ -132,7 +135,7 @@ func NewServer(config *appconfig.Config) (*Server, error) {
 		config: config,
 		services: Services{
 			app: appService,
-			job: service.NewJobService(slurmClient, slurmCache, jobs),
+			job: service.NewJobService(slurmClient, slurmCache, jobs, executor),
 		},
 		slurmClient:    slurmClient,
 		slurmCache:     slurmCache,

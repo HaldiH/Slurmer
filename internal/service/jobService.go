@@ -19,9 +19,9 @@ type JobService interface {
 	Start(job *model.Job) error
 	Stop(job *model.Job) error
 
-	PruneJob(job *model.Job) error
-	Create(app *model.Application, prop *slurm.BatchProperties) (*model.Job, error)
+	Create(user string, app *model.Application, prop *slurm.BatchProperties) (*model.Job, error)
 	Delete(app *model.Application, job *model.Job) error
+	PruneJob(job *model.Job) error
 
 	// PollJobsStatus retrieve the new job status from slurm for the running jobs
 	// and update the database.

@@ -27,6 +27,8 @@ type JobResponseProperties struct {
 	StateDescription string   `json:"state_description"`
 	StateReason      string   `json:"state_reason"`
 	Name             string   `json:"name"`
+	UserName         string   `json:"user_name"`
+	UserId           int      `json:"user_id"`
 }
 
 type JobsResponse struct {

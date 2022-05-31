@@ -50,7 +50,8 @@ func (s *Server) createApp(w http.ResponseWriter, r *http.Request) {
 
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(&app); err != nil {
-		MustNone(err, w)
+		log.Error(err)
+		http.Error(w, "Cannot show application", http.StatusInternalServerError)
 		return
 	}
 }
