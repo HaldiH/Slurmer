@@ -19,18 +19,6 @@ type Job struct {
 	AppId     uuid.UUID                    `json:"-"`
 }
 
-type JobPatchRequest struct {
-	Action *JobAction `json:"action"`
-}
-
-type JobAction string
-
-const (
-	JobPrune JobAction = "prune"
-	JobStart JobAction = "start"
-	JobStop  JobAction = "stop"
-)
-
 var ErrUnknownJobStatus error = errors.New("unknown job status")
 
 type JobStatus uint

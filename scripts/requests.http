@@ -109,28 +109,16 @@ X-Auth-Token: {{token}}
 User: {{user}}
 
 ###
-PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
+PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/prune
 X-Auth-Token: {{token}}
 User: {{user}}
-
-{
-  "action": "prune"
-}
 
 ###
-PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
+PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/start
 X-Auth-Token: {{token}}
 User: {{user}}
-
-{
-  "action": "start"
-}
 
 ###
-PATCH {{baseUrl}}/apps/{{app}}/jobs/{{job}}
+PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/stop
 X-Auth-Token: {{token}}
 User: {{user}}
-
-{
-  "action": "stop"
-}

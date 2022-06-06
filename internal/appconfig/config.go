@@ -23,7 +23,7 @@ type Config struct {
 		URL string `yaml:"url"`
 	} `yaml:"slurmrest,omitempty"`
 	Slurmer Slurmer `yaml:"slurmer"`
-	OIDC    OIDC
+	OIDC    OIDC    `yaml:"oidc"`
 }
 
 type Slurmer struct {
@@ -116,6 +116,7 @@ func FillConfEnv(config *Config) error {
 		&config.Slurmer.WorkingDir:   "SLURMER_WD",
 		&config.Slurmer.TemplatesDir: "SLURMER_TEMPLATES_DIR",
 		&config.Slurmer.Connector:    "SLURMER_CONNECTOR",
+		&config.Slurmer.ExecutorPath: "SLURMER_EXECUTOR_PATH",
 		&config.Slurmer.Logs.Format:  "SLURMER_LOGS_FORMAT",
 		&config.Slurmer.Logs.Level:   "SLURMER_LOGS_LEVEL",
 		&config.Slurmer.Logs.Stdout:  "SLURMER_LOGS_STDOUT",

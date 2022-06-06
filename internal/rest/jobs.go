@@ -29,10 +29,12 @@ func (s *Server) jobsRouter(r chi.Router) {
 		r.Use(s.jobCtx)
 		r.Get("/", s.getJob)
 		r.Delete("/", s.deleteJob)
-		r.Patch("/", s.patchJob)
 		r.Get("/batch", s.getBatch)
 		r.Get("/out", s.getOut)
 		r.Put("/status", s.updateJobStatus)
+		r.Put("/prune", s.pruneJob)
+		r.Put("/start", s.startJob)
+		r.Put("/stop", s.stopJob)
 		r.Route("/files", filesRouter)
 	})
 }
@@ -132,33 +134,37 @@ func (s *Server) getOut(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, file)
 }
 
-func (s *Server) patchJob(w http.ResponseWriter, r *http.Request) {
+func (s *Server) pruneJob(w http.ResponseWriter, r *http.Request) {
 	job := getCtxJob(r.Context())
 
-	var patchReq model.JobPatchRequest
-	if err := json.NewDecoder(r.Body).Decode(&patchReq); err != nil {
-		Error(w, http.StatusBadRequest)
+	if err := s.services.job.PruneJob(job); err != nil {
+		Error(w, http.StatusInternalServerError)
 		return
 	}
 
-	if patchReq.Action != nil {
-		var err error
-		switch *patchReq.Action {
-		case model.JobPrune:
-			err = s.services.job.PruneJob(job)
-		case model.JobStart:
-			err = s.services.job.Start(job)
-		case model.JobStop:
-			err = s.services.job.Stop(job)
-		default:
-			http.Error(w, "Unknown action: "+string(*patchReq.Action), http.StatusBadRequest)
-			return
-		}
-		if err != nil {
-			Error(w, http.StatusInternalServerError)
-			return
-		}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) startJob(w http.ResponseWriter, r *http.Request) {
+	job := getCtxJob(r.Context())
+
+	if err := s.services.job.Start(job); err != nil {
+		Error(w, http.StatusInternalServerError)
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) stopJob(w http.ResponseWriter, r *http.Request) {
+	job := getCtxJob(r.Context())
+
+	if err := s.services.job.Stop(job); err != nil {
+		Error(w, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) getBatch(w http.ResponseWriter, r *http.Request) {
