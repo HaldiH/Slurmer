@@ -14,10 +14,11 @@ import (
 )
 
 const shell = "/bin/sh"
-const slurmUid int = 1000
-const (
-	minUid = 1000
-	maxUid = 65535
+
+var (
+	slurmerUid = "1000"
+	minUid     = "1000"
+	maxUid     = "65535"
 )
 
 func main() {
@@ -26,6 +27,19 @@ func main() {
 	cmdPtr := flag.String("command", "", "Command to execute")
 	stdinPtr := flag.Bool("stdin", false, "Read command from stdin")
 	flag.Parse()
+
+	slurmerUid, err := strconv.Atoi(slurmerUid)
+	if err != nil {
+		panic(err)
+	}
+	minUid, err := strconv.Atoi(minUid)
+	if err != nil {
+		panic(err)
+	}
+	maxUid, err := strconv.Atoi(maxUid)
+	if err != nil {
+		panic(err)
+	}
 
 	die := func(reason string, code int) {
 		fmt.Fprintln(flag.CommandLine.Output(), reason)
@@ -57,7 +71,7 @@ func main() {
 		}
 
 		ruid := syscall.Getuid()
-		if ruid != slurmUid && ruid != 0 {
+		if ruid != slurmerUid && ruid != 0 {
 			die("bad calling user", 4)
 		}
 
@@ -117,7 +131,7 @@ func main() {
 		}
 
 		ruid := os.Getuid()
-		if ruid != slurmUid && ruid != 0 {
+		if ruid != slurmerUid && ruid != 0 {
 			die("bad calling user", 11)
 		}
 

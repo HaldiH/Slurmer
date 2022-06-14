@@ -1,0 +1,22 @@
+{
+    "rest-client.environmentVariables": {
+        "$shared": {},
+        "local": {
+            "host": "127.0.0.1",
+            "proto": "http",
+            "port": "8080",
+            "token": "debug",
+            "app": "507607ae-b477-4707-ad3c-2c545a60157e",
+            "user": "hugo"
+        },
+        "vm": {
+            "host": "fedora1",
+            "proto": "http",
+            "port": "8080",
+            "token": "debug",
+            "app": "09861a1b-6780-4ab0-8a38-bbe70b934bee",
+            "user": "root"
+        }
+    },
+    "rpc.enabled": true,
+}

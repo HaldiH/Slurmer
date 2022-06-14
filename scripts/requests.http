@@ -1,6 +1,4 @@
-@baseUrl = http://{{host}}:{{port}}
-@job = 2f7de1fd-92a3-4af0-b144-99f42771b0e0
-
+@baseUrl = {{proto}}://{{host}}:{{port}}
 @jwt = 
 
 ###
@@ -37,6 +35,7 @@ X-Auth-Token: {{token}}
 User: {{user}}
 
 ###
+# @name create_job
 POST {{baseUrl}}/apps/{{app}}/jobs
 Accept: application/json
 X-Auth-Token: {{token}}
@@ -49,6 +48,8 @@ User: {{user}}
   "command": "echo",
   "args": ["hello", ",", "baobab", "'`echo pwnd`'"]
 }
+
+@job = {{create_job.response.body.$.id}}
 
 ###
 PUT {{baseUrl}}/apps/{{app}}/jobs/{{job}}/status
