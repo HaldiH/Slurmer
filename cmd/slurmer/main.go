@@ -58,7 +58,7 @@ func init() {
 	} else {
 		if err := os.MkdirAll(
 			filepath.Dir(cfg.Slurmer.Logs.Output),
-			os.ModeDir); err != nil {
+			0700); err != nil {
 			panic(err)
 		}
 		if f, err := os.OpenFile(cfg.Slurmer.Logs.Output, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0440); err != nil {
