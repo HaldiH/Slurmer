@@ -1,3 +1,4 @@
+# Useful when 'connector' is set to 'slurmrest'; not implemented yet
 slurmrest:
   url: "http+unix:///default?socket=/tmp/slurmrestd.sock"
 
@@ -5,8 +6,9 @@ slurmer:
   ip: 127.0.0.1
   port: 8080
   connector: slurmcli
-  working_dir: /tmp/slurmer
-  templates_dir: configs/templates
+  working_dir: /var/lib/slurmer
+  templates_dir: /etc/slurmer/templates
+  executor_path: /usr/bin/executor
   applications:
     - name: app1
       token: averycomplicatedchallenge
@@ -16,8 +18,14 @@ slurmer:
     format: text
 
     stdout: false
-    output: logs/slurmer.txt
+    output: /var/logs/slurmer.log
 
     # available, from most to less verbose:
     # trace, debug, info, warning, error, fatal, panic
     level: debug
+
+# To enable OIDC
+oidc:
+  enabled: false
+  issuer: ""
+  audience: ""

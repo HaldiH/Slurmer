@@ -1,23 +1,26 @@
 GO=go
-execMinUid=1000
-execMaxUid=65535
-execSlurmerUid=1000
+MIN_UID=1000
+MAX_UID=65535
+SLURMER_UID=1000
+PREFIX=/usr/local
+LDFLAGS = -s -w # Remove debug symbols and info
 
 all: slurmer executor
 
 slurmer: cmd/slurmer/main.go
-	${GO} build -o "$@" $^
+	${GO} build -o "$@" -ldflags="${LDFLAGS}" $^
 
 executor: cmd/cliexecutor/main.go
-	${GO} build -o "$@" -ldflags=" \
-		-X 'main.slurmerUid=${execSlurmerUid}' \
-		-X 'main.minUid=${execMinUid}' \
-		-X 'main.maxUid=${execMaxUid}'" $^
+	${GO} build -o "$@" -ldflags="${LDFLAGS} \
+		-X 'main.slurmerUid=${SLURMER_UID}' \
+		-X 'main.minUid=${MIN_UID}' \
+		-X 'main.maxUid=${MAX_UID}'" $^
 
 install: executor slurmer
-	chown root:root executor
-	chmod u+s executor
-	chmod g+s executor
+	mkdir -p ${PREFIX}/bin
+	cp slurmer executor ${PREFIX}/bin/
+	chown root:root ${PREFIX}/bin/executor
+	chmod u+s ${PREFIX}/bin/executor
 
 clean:
 	rm -rf slurmer executor
