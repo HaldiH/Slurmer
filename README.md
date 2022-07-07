@@ -6,6 +6,12 @@ A job manager for Slurm, written in Go.
 
 ### From sources
 
+Requirements:
+
+- Go >= 1.18
+- GNU Make
+- Slurm commands on the host that will run Slurmer and be connected to the cluster
+
 First, you have to compile the code to get both `slurmer` and `executor` executables. A Makefile is available to do so:
 
 ```bash
