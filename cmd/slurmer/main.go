@@ -23,6 +23,7 @@ var cfg = &appconfig.Config{
 			Stdout: true,
 			Level:  "debug",
 		},
+		PollInterval: 10,
 	},
 }
 

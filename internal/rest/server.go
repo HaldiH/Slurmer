@@ -166,7 +166,7 @@ func (s *Server) Listen() error {
 	if err := s.services.job.PollJobsStatus(); err != nil {
 		return err
 	}
-	go s.heartBeat(10 * time.Second)
+	go s.heartBeat(time.Duration(s.config.Slurmer.PollInterval) * time.Second)
 
 	addr := fmt.Sprintf("%s:%s", s.config.Slurmer.IP, s.config.Slurmer.Port)
 	log.Infof("Server listening on %s\n", addr)

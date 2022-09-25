@@ -36,6 +36,7 @@ type Slurmer struct {
 	Logs         Logs           `yaml:"logs"`
 	ExecutorPath string         `yaml:"executor_path"`
 	ConfigPath   string         `yaml:"-"`
+	PollInterval int            `yaml:"poll_interval"`
 }
 
 type Logs struct {
@@ -121,6 +122,7 @@ func FillConfEnv(config *Config) error {
 		&config.Slurmer.Logs.Level:   "SLURMER_LOGS_LEVEL",
 		&config.Slurmer.Logs.Stdout:  "SLURMER_LOGS_STDOUT",
 		&config.Slurmer.Logs.Output:  "SLURMER_LOGS_OUTPUT",
+		&config.Slurmer.PollInterval: "SLURMER_POLL_INTERVAL",
 		&config.OIDC.Enabled:         "SLURMER_OIDC_ENABLED",
 		&config.OIDC.Issuer:          "SLURMER_OIDC_ISSUER",
 		&config.OIDC.Audience:        "SLURMER_OIDC_AUDIENCE",
